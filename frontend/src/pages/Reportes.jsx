@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import PinGuard from '../components/PinGuard'
 import api, { formatCOP } from '../api/client'
 import ModalConfirmarEliminar from '../components/ModalConfirmarEliminar'
+import DatePicker from '../components/DatePicker'
 import './Reportes.css'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -17,6 +18,27 @@ function mesAnteriorInicio() {
   d.setDate(1)
   d.setMonth(d.getMonth() - 1)
   return d.toISOString().slice(0, 10)
+}
+
+function mesAnteriorFin() {
+  const d = new Date()
+  d.setDate(0) // último día del mes anterior
+  return d.toISOString().slice(0, 10)
+}
+
+function ultimasCuatroSemanas() {
+  const d = new Date()
+  d.setDate(d.getDate() - 28)
+  return d.toISOString().slice(0, 10)
+}
+
+function obtenerSabadoActual() {
+  const today = new Date()
+  const dow = today.getDay()
+  const diffSab = dow === 6 ? 0 : dow === 0 ? -1 : -(dow + 1)
+  const sab = new Date(today)
+  sab.setDate(today.getDate() + diffSab)
+  return sab.toISOString().slice(0, 10)
 }
 
 // ── Panel turno activo ────────────────────────────────────────────────────────
@@ -159,7 +181,12 @@ function TabDia({ recargarTurno }) {
       <div className="reportes-header">
         <h2>Reporte del día</h2>
         <div className="reportes-controls">
-          <input type="date" value={fecha} max={HOY} onChange={(e) => setFecha(e.target.value)} />
+          <DatePicker
+            modo="single"
+            fecha={fecha}
+            onChange={setFecha}
+            maxFecha={HOY}
+          />
           <button onClick={() => { cargar(); cargarInsumos(); cargarNomina() }} className="btn-recargar">↻</button>
           <button onClick={() => exportar('xlsx')} className="btn-export excel">Excel</button>
           <button onClick={() => exportar('json')} className="btn-export json">JSON</button>
@@ -296,10 +323,13 @@ function TabDia({ recargarTurno }) {
 // TAB 2 — FIN DE SEMANA
 // ════════════════════════════════════════════════════════════════════════════
 function TabFinSemana() {
-  const [fecha, setFecha]       = useState(HOY)
-  const [datos, setDatos]       = useState(null)
-  const [cargando, setCargando] = useState(false)
-  const [error, setError]       = useState('')
+  const [modoAuto, setModoAuto]       = useState(true)
+  const [fechaManualSab, setFechaManualSab] = useState(obtenerSabadoActual())
+  const [datos, setDatos]             = useState(null)
+  const [cargando, setCargando]       = useState(false)
+  const [error, setError]             = useState('')
+
+  const fecha = modoAuto ? HOY : (fechaManualSab || HOY)
 
   const cargar = async () => {
     setCargando(true); setError('')
@@ -339,7 +369,20 @@ function TabFinSemana() {
       <div className="reportes-header">
         <h2>Fin de semana</h2>
         <div className="reportes-controls">
-          <input type="date" value={fecha} max={HOY} onChange={(e) => setFecha(e.target.value)} />
+          <button
+            className={`btn-modo-semana ${modoAuto ? 'activo' : ''}`}
+            onClick={() => setModoAuto(v => !v)}
+          >
+            {modoAuto ? '● Auto' : '○ Manual'}
+          </button>
+          {!modoAuto && (
+            <DatePicker
+              modo="week"
+              fecha={fechaManualSab}
+              onChange={(sab) => setFechaManualSab(sab)}
+              maxFecha={HOY}
+            />
+          )}
           <button onClick={cargar} className="btn-recargar">↻</button>
           <button onClick={exportar} className="btn-export excel">Excel</button>
         </div>
@@ -415,6 +458,20 @@ function TabMes() {
     } catch (err) { alert('Error al exportar: ' + (err?.message ?? 'desconocido')) }
   }
 
+  const irMesActual = () => {
+    const d = new Date()
+    setAnio(d.getFullYear())
+    setMes(d.getMonth() + 1)
+  }
+
+  const irMesAnterior = () => {
+    const d = new Date()
+    d.setDate(1)
+    d.setMonth(d.getMonth() - 1)
+    setAnio(d.getFullYear())
+    setMes(d.getMonth() + 1)
+  }
+
   const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
   const maxVenta = datos?.por_dia?.length ? Math.max(...datos.por_dia.map(d => d.total), 1) : 1
 
@@ -431,6 +488,11 @@ function TabMes() {
           <button onClick={cargar} className="btn-recargar">↻</button>
           <button onClick={exportar} className="btn-export excel">Excel</button>
         </div>
+      </div>
+
+      <div className="rep-atajos">
+        <button className="btn-atajo" onClick={irMesActual}>Mes actual</button>
+        <button className="btn-atajo" onClick={irMesAnterior}>Mes anterior</button>
       </div>
 
       {cargando && <p className="r-cargando">Cargando...</p>}
@@ -565,11 +627,27 @@ function TabTrabajador() {
             <option value="">Seleccionar trabajador…</option>
             {trabajadores.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
           </select>
-          <input type="date" className="turno-input" value={desde} max={hasta} onChange={(e) => setDesde(e.target.value)} />
-          <input type="date" className="turno-input" value={hasta} min={desde} max={HOY} onChange={(e) => setHasta(e.target.value)} />
           <button onClick={cargar} className="btn-recargar" disabled={!selId}>↻</button>
           <button onClick={exportar} className="btn-export excel" disabled={!selId || !datos}>Excel</button>
         </div>
+      </div>
+
+      <div className="rango-fechas">
+        <DatePicker
+          modo="single"
+          fecha={desde}
+          onChange={setDesde}
+          maxFecha={hasta || HOY}
+          placeholder="Desde"
+        />
+        <span style={{ color: 'var(--text-muted)' }}>—</span>
+        <DatePicker
+          modo="single"
+          fecha={hasta}
+          onChange={setHasta}
+          maxFecha={HOY}
+          placeholder="Hasta"
+        />
       </div>
 
       {!selId && <p className="r-sin-datos">Selecciona un trabajador para ver su reporte</p>}
@@ -663,12 +741,32 @@ function TabGeneral() {
       <div className="reportes-header">
         <h2>Reporte general</h2>
         <div className="reportes-controls">
-          <input type="date" className="turno-input" value={desde} max={hasta} onChange={(e) => setDesde(e.target.value)} />
-          <span style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>→</span>
-          <input type="date" className="turno-input" value={hasta} min={desde} max={HOY} onChange={(e) => setHasta(e.target.value)} />
+          <DatePicker
+            modo="range"
+            fechaDesde={desde}
+            fechaHasta={hasta}
+            onChangeRango={(d, h) => {
+              setDesde(d || primerDiaMes())
+              setHasta(h || HOY)
+            }}
+            maxFecha={HOY}
+            placeholder="Seleccionar rango de fechas"
+          />
           <button onClick={cargar} className="btn-recargar">↻</button>
           <button onClick={exportar} className="btn-export excel" disabled={!datos}>Excel</button>
         </div>
+      </div>
+
+      <div className="rep-atajos">
+        <button className="btn-atajo" onClick={() => { setDesde(primerDiaMes()); setHasta(HOY) }}>
+          Este mes
+        </button>
+        <button className="btn-atajo" onClick={() => { setDesde(mesAnteriorInicio()); setHasta(mesAnteriorFin()) }}>
+          Mes anterior
+        </button>
+        <button className="btn-atajo" onClick={() => { setDesde(ultimasCuatroSemanas()); setHasta(HOY) }}>
+          Últimas 4 semanas
+        </button>
       </div>
 
       {cargando && <p className="r-cargando">Cargando...</p>}

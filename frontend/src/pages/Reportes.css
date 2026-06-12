@@ -72,6 +72,54 @@
 .reportes-controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .reportes-controls input[type=date] { width: auto; font-size: var(--text-sm); padding: 6px 10px; }
 
+/* ── Atajos rápidos ── */
+.rep-atajos {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.btn-atajo {
+  padding: 5px 12px;
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-full);
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 120ms;
+}
+.btn-atajo:hover {
+  border-color: var(--red);
+  color: #f87171;
+}
+
+/* ── Rango de fechas (Tab Trabajador) ── */
+.rango-fechas {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+/* ── Toggle Auto/Manual (Tab Fin de Semana) ── */
+.btn-modo-semana {
+  padding: 7px 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-full);
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 120ms;
+}
+.btn-modo-semana.activo {
+  border-color: var(--red);
+  color: #f87171;
+  background: var(--red-dim);
+}
+
 .btn-recargar {
   padding: 7px 12px;
   background: var(--bg-elevated);
