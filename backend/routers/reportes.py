@@ -527,6 +527,262 @@ def reporte_general(
     }
 
 
+# ── TOP PRODUCTOS ─────────────────────────────────────────────────────────────
+
+@router.get("/top-productos")
+def top_productos(
+    desde:  str | None = Query(None, description="YYYY-MM-DD"),
+    hasta:  str | None = Query(None, description="YYYY-MM-DD"),
+    limite: int        = Query(10, ge=1, le=20),
+):
+    hoy = date.today()
+    f_hasta = hasta or hoy.isoformat()
+    f_desde = desde or (hoy - timedelta(days=30)).isoformat()
+
+    try:
+        with persistencia.conexion() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT
+                        lv.producto_nombre                         AS nombre,
+                        SUM(lv.cantidad)                          AS total_unidades,
+                        SUM(lv.subtotal)                          AS total_cop,
+                        COUNT(DISTINCT lv.id_factura)             AS num_facturas
+                    FROM lineas_venta lv
+                    JOIN ventas v ON v.id_factura = lv.id_factura
+                    WHERE (v.anulada = 0 OR v.anulada IS NULL)
+                      AND LEFT(v.fecha_hora, 10) BETWEEN %s AND %s
+                    GROUP BY lv.producto_nombre
+                    ORDER BY total_unidades DESC
+                    LIMIT %s
+                    """, (f_desde, f_hasta, limite),
+                )
+                rows = cur.fetchall()
+    except ErrorBaseDatos as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    max_uds = int(rows[0]["total_unidades"]) if rows else 1
+    productos = [
+        {
+            "nombre":      r["nombre"],
+            "unidades":    int(r["total_unidades"]),
+            "total_cop":   int(r["total_cop"] or 0),
+            "num_facturas": int(r["num_facturas"]),
+            "porcentaje":  round(int(r["total_unidades"]) / max_uds * 100, 1),
+        }
+        for r in rows
+    ]
+    return {"desde": f_desde, "hasta": f_hasta, "productos": productos}
+
+
+# ── TOP SEMANAS ────────────────────────────────────────────────────────────────
+
+MESES_CORTOS = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']
+
+
+@router.get("/top-semanas")
+def top_semanas_endpoint(
+    anio:   int = Query(default_factory=lambda: date.today().year),
+    limite: int = Query(10, ge=1, le=52),
+):
+    f_ini = date(anio, 1, 1).isoformat()
+    f_fin = date(anio, 12, 31).isoformat()
+
+    try:
+        with persistencia.conexion() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT LEFT(fecha_hora, 10) AS fecha_dia,
+                           COALESCE(SUM(total_pagar), 0) AS ventas_dia,
+                           COUNT(*) AS facturas_dia
+                    FROM ventas
+                    WHERE (anulada = 0 OR anulada IS NULL)
+                      AND LEFT(fecha_hora, 10) BETWEEN %s AND %s
+                    GROUP BY fecha_dia
+                    ORDER BY fecha_dia
+                    """, (f_ini, f_fin),
+                )
+                dias = cur.fetchall()
+    except ErrorBaseDatos as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    semanas: dict[str, dict] = {}
+    for row in dias:
+        sab = _sabado_de_semana(date.fromisoformat(row["fecha_dia"]))
+        sab_s = sab.isoformat()
+        if sab_s not in semanas:
+            semanas[sab_s] = {"total": 0, "facturas": 0}
+        semanas[sab_s]["total"]    += int(row["ventas_dia"] or 0)
+        semanas[sab_s]["facturas"] += int(row["facturas_dia"] or 0)
+
+    resultado = []
+    for sab_s, datos in semanas.items():
+        sab = date.fromisoformat(sab_s)
+        lun = sab + timedelta(days=2)
+        label = f"{sab.day}–{lun.day} {MESES_CORTOS[sab.month - 1]} {sab.year}"
+        resultado.append({
+            "fecha_sabado": sab_s,
+            "fecha_fin":    lun.isoformat(),
+            "label":        label,
+            "total_ventas": datos["total"],
+            "num_facturas": datos["facturas"],
+        })
+
+    resultado.sort(key=lambda x: x["total_ventas"], reverse=True)
+    resultado = resultado[:limite]
+    for i, r in enumerate(resultado):
+        r["posicion"] = i + 1
+
+    return {"semanas": resultado}
+
+
+# ── DASHBOARD ─────────────────────────────────────────────────────────────────
+
+@router.get("/dashboard")
+def dashboard():
+    hoy  = date.today()
+    hoy_s = hoy.isoformat()
+    _, dias_mes = calendar.monthrange(hoy.year, hoy.month)
+    mes_ini = date(hoy.year, hoy.month, 1).isoformat()
+    mes_fin = date(hoy.year, hoy.month, dias_mes).isoformat()
+    anio_ini = date(hoy.year, 1, 1).isoformat()
+    anio_fin = date(hoy.year, 12, 31).isoformat()
+
+    try:
+        with persistencia.conexion() as conn:
+            with conn.cursor() as cur:
+                # Ventas de hoy
+                v_hoy = _ventas_dia(cur, hoy_s)
+                cur.execute(
+                    "SELECT COALESCE(SUM(vuelto_dado),0) AS vueltos FROM ventas "
+                    "WHERE LEFT(fecha_hora,10)=%s AND (anulada=0 OR anulada IS NULL)",
+                    (hoy_s,),
+                )
+                vueltos_hoy = int(cur.fetchone()["vueltos"] or 0)
+
+                # Top 5 productos del mes
+                cur.execute(
+                    """
+                    SELECT lv.producto_nombre AS nombre,
+                           SUM(lv.cantidad)   AS total_unidades,
+                           SUM(lv.subtotal)   AS total_cop
+                    FROM lineas_venta lv
+                    JOIN ventas v ON v.id_factura = lv.id_factura
+                    WHERE (v.anulada = 0 OR v.anulada IS NULL)
+                      AND LEFT(v.fecha_hora, 10) BETWEEN %s AND %s
+                    GROUP BY lv.producto_nombre
+                    ORDER BY total_unidades DESC
+                    LIMIT 5
+                    """, (mes_ini, mes_fin),
+                )
+                rows_prod = cur.fetchall()
+
+                # Ventas por día del año para top semanas
+                cur.execute(
+                    """
+                    SELECT LEFT(fecha_hora, 10) AS fecha_dia,
+                           COALESCE(SUM(total_pagar), 0) AS ventas_dia,
+                           COUNT(*) AS facturas_dia
+                    FROM ventas
+                    WHERE (anulada = 0 OR anulada IS NULL)
+                      AND LEFT(fecha_hora, 10) BETWEEN %s AND %s
+                    GROUP BY fecha_dia
+                    """, (anio_ini, anio_fin),
+                )
+                dias = cur.fetchall()
+
+                # Resumen del mes actual
+                cur.execute(
+                    """
+                    SELECT COALESCE(SUM(total_pagar),0) AS total,
+                           COUNT(*) AS facturas,
+                           COALESCE(SUM(CASE WHEN metodo_pago='Efectivo' THEN total_pagar ELSE 0 END),0) AS efectivo,
+                           COALESCE(SUM(CASE WHEN metodo_pago='Nequi'    THEN total_pagar ELSE 0 END),0) AS nequi
+                    FROM ventas
+                    WHERE LEFT(fecha_hora,10) BETWEEN %s AND %s
+                      AND (anulada=0 OR anulada IS NULL)
+                    """, (mes_ini, mes_fin),
+                )
+                rv_mes = cur.fetchone()
+
+                cur.execute(
+                    "SELECT COALESCE(SUM(total),0) AS t FROM compras WHERE fecha BETWEEN %s AND %s",
+                    (mes_ini, mes_fin),
+                )
+                insumos_mes = int(cur.fetchone()["t"] or 0)
+
+                cur.execute(
+                    "SELECT COALESCE(SUM(total),0) AS t FROM nomina_semana "
+                    "WHERE estado='pagada' AND fecha_inicio BETWEEN %s AND %s",
+                    (mes_ini, mes_fin),
+                )
+                nomina_mes = int(cur.fetchone()["t"] or 0)
+    except ErrorBaseDatos as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    # Procesar top productos
+    max_uds = int(rows_prod[0]["total_unidades"]) if rows_prod else 1
+    top_productos = [
+        {
+            "nombre":    r["nombre"],
+            "unidades":  int(r["total_unidades"]),
+            "total_cop": int(r["total_cop"] or 0),
+            "porcentaje": round(int(r["total_unidades"]) / max_uds * 100, 1),
+        }
+        for r in rows_prod
+    ]
+
+    # Procesar top semanas
+    semanas: dict[str, dict] = {}
+    for row in dias:
+        sab = _sabado_de_semana(date.fromisoformat(row["fecha_dia"]))
+        sab_s = sab.isoformat()
+        if sab_s not in semanas:
+            semanas[sab_s] = {"total": 0, "facturas": 0}
+        semanas[sab_s]["total"]    += int(row["ventas_dia"] or 0)
+        semanas[sab_s]["facturas"] += int(row["facturas_dia"] or 0)
+
+    top_semanas_list = []
+    for sab_s, datos in semanas.items():
+        sab = date.fromisoformat(sab_s)
+        lun = sab + timedelta(days=2)
+        label = f"{sab.day}–{lun.day} {MESES_CORTOS[sab.month - 1]} {sab.year}"
+        top_semanas_list.append({
+            "fecha_sabado": sab_s,
+            "fecha_fin":    lun.isoformat(),
+            "label":        label,
+            "total_ventas": datos["total"],
+            "num_facturas": datos["facturas"],
+        })
+    top_semanas_list.sort(key=lambda x: x["total_ventas"], reverse=True)
+    top_semanas_list = top_semanas_list[:5]
+    for i, r in enumerate(top_semanas_list):
+        r["posicion"] = i + 1
+
+    total_ventas_mes = int(rv_mes["total"] or 0)
+    return {
+        "hoy": {
+            "total_ventas":  v_hoy["total"],
+            "total_efectivo": v_hoy["efectivo"],
+            "total_vueltos": vueltos_hoy,
+            "num_facturas":  v_hoy["facturas"],
+        },
+        "mes": {
+            "total_ventas":   total_ventas_mes,
+            "total_facturas": int(rv_mes["facturas"] or 0),
+            "total_efectivo": int(rv_mes["efectivo"] or 0),
+            "total_nequi":    int(rv_mes["nequi"] or 0),
+            "total_insumos":  insumos_mes,
+            "total_nomina":   nomina_mes,
+            "ganancia":       total_ventas_mes - insumos_mes - nomina_mes,
+        },
+        "top_productos": top_productos,
+        "top_semanas":   top_semanas_list,
+    }
+
+
 @router.get("/exportar/general")
 def exportar_excel_general(
     desde: str = Query(...),
