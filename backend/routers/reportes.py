@@ -545,10 +545,10 @@ def top_productos(
                 cur.execute(
                     """
                     SELECT
-                        lv.producto_nombre                         AS nombre,
-                        SUM(lv.cantidad)                          AS total_unidades,
-                        SUM(lv.subtotal)                          AS total_cop,
-                        COUNT(DISTINCT lv.id_factura)             AS num_facturas
+                        lv.producto_nombre                              AS nombre,
+                        SUM(lv.cantidad)                               AS total_unidades,
+                        SUM(lv.cantidad * lv.precio_unitario)          AS total_cop,
+                        COUNT(DISTINCT lv.id_factura)                  AS num_facturas
                     FROM lineas_venta lv
                     JOIN ventas v ON v.id_factura = lv.id_factura
                     WHERE (v.anulada = 0 OR v.anulada IS NULL)
@@ -665,9 +665,9 @@ def dashboard():
                 # Top 5 productos del mes
                 cur.execute(
                     """
-                    SELECT lv.producto_nombre AS nombre,
-                           SUM(lv.cantidad)   AS total_unidades,
-                           SUM(lv.subtotal)   AS total_cop
+                    SELECT lv.producto_nombre                        AS nombre,
+                           SUM(lv.cantidad)                         AS total_unidades,
+                           SUM(lv.cantidad * lv.precio_unitario)    AS total_cop
                     FROM lineas_venta lv
                     JOIN ventas v ON v.id_factura = lv.id_factura
                     WHERE (v.anulada = 0 OR v.anulada IS NULL)

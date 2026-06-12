@@ -100,12 +100,17 @@ def _crear_base_y_tablas() -> None:
       cur.execute(
         """
         CREATE TABLE IF NOT EXISTS ventas (
-          id_factura VARCHAR(24) NOT NULL PRIMARY KEY,
-          fecha_hora VARCHAR(32) NOT NULL,
-          metodo_pago VARCHAR(20) NOT NULL,
-          tipo_entrega VARCHAR(20) NOT NULL,
+          id_factura       VARCHAR(24) NOT NULL PRIMARY KEY,
+          fecha_hora       VARCHAR(32) NOT NULL,
+          metodo_pago      VARCHAR(20) NOT NULL,
+          tipo_entrega     VARCHAR(20) NOT NULL,
           telefono_cliente VARCHAR(20) DEFAULT NULL,
-          total_pagar INT NOT NULL,
+          total_pagar      INT NOT NULL,
+          turno_id         INT DEFAULT NULL,
+          monto_recibido   INT NOT NULL DEFAULT 0,
+          vuelto_dado      INT NOT NULL DEFAULT 0,
+          anulada          TINYINT(1) NOT NULL DEFAULT 0,
+          motivo_anulacion VARCHAR(200) DEFAULT NULL,
           INDEX idx_ventas_fecha (fecha_hora),
           INDEX idx_ventas_pago (metodo_pago)
         ) ENGINE=InnoDB
@@ -461,23 +466,20 @@ def set_config(clave: str, valor: str) -> None:
 
 def _migraciones() -> None:
   """Aplica migraciones de esquema que no están en CREATE TABLE (idempotente)."""
+  _alter = [
+    ("ventas",      "turno_id",         "ALTER TABLE ventas ADD COLUMN turno_id INT DEFAULT NULL"),
+    ("ventas",      "monto_recibido",   "ALTER TABLE ventas ADD COLUMN monto_recibido INT NOT NULL DEFAULT 0"),
+    ("ventas",      "vuelto_dado",      "ALTER TABLE ventas ADD COLUMN vuelto_dado INT NOT NULL DEFAULT 0"),
+    ("ventas",      "anulada",          "ALTER TABLE ventas ADD COLUMN anulada TINYINT(1) NOT NULL DEFAULT 0"),
+    ("ventas",      "motivo_anulacion", "ALTER TABLE ventas ADD COLUMN motivo_anulacion VARCHAR(200) DEFAULT NULL"),
+    ("turnos",      "anulado",          "ALTER TABLE turnos ADD COLUMN anulado TINYINT(1) NOT NULL DEFAULT 0"),
+  ]
   with conexion() as conn:
     with conn.cursor() as cur:
-      cur.execute("SHOW COLUMNS FROM ventas LIKE 'anulada'")
-      if not cur.fetchone():
-        cur.execute(
-          "ALTER TABLE ventas ADD COLUMN anulada TINYINT(1) NOT NULL DEFAULT 0"
-        )
-      cur.execute("SHOW COLUMNS FROM ventas LIKE 'motivo_anulacion'")
-      if not cur.fetchone():
-        cur.execute(
-          "ALTER TABLE ventas ADD COLUMN motivo_anulacion VARCHAR(200) DEFAULT NULL"
-        )
-      cur.execute("SHOW COLUMNS FROM turnos LIKE 'anulado'")
-      if not cur.fetchone():
-        cur.execute(
-          "ALTER TABLE turnos ADD COLUMN anulado TINYINT(1) NOT NULL DEFAULT 0"
-        )
+      for tabla, columna, sql in _alter:
+        cur.execute(f"SHOW COLUMNS FROM {tabla} LIKE %s", (columna,))
+        if not cur.fetchone():
+          cur.execute(sql)
 
 
 def inicializar_bd() -> None:
