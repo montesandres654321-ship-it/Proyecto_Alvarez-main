@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import api, { formatCOP } from '../api/client'
+import DatePicker from '../components/DatePicker'
 import './Insumos.css'
 
 const UNIDADES = ['kg', 'und', 'lt', 'paq', 'gr']
@@ -19,12 +20,17 @@ function filaVacia(insumo) {
   }
 }
 
+function formatearFechaLarga(fecha) {
+  const d = new Date(fecha + 'T12:00:00')
+  return d.toLocaleDateString('es-CO', {
+    weekday: 'long', day: 'numeric', month: 'short', year: 'numeric'
+  })
+}
+
 export default function Insumos() {
   const hoy = new Date().toISOString().slice(0, 10)
-  const fechaFormateada = new Date().toLocaleDateString('es-CO', {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-  })
 
+  const [fechaSeleccionada, setFechaSeleccionada] = useState(hoy)
   const [filas, setFilas] = useState([])
   const [nota, setNota] = useState('')
   const [guardando, setGuardando] = useState(false)
@@ -45,16 +51,16 @@ export default function Insumos() {
     setNota('')
   }
 
-  const cargarComprasHoy = async () => {
+  const cargarComprasDelDia = async (fecha) => {
     try {
-      const res = await api.get(`/insumos/compras?fecha=${hoy}`)
+      const res = await api.get(`/insumos/compras?fecha=${fecha}`)
       setComprasHoy(res.data)
     } catch {}
   }
 
   useEffect(() => {
     cargarCatalogo()
-    cargarComprasHoy()
+    cargarComprasDelDia(hoy)
   }, [])
 
   const calcularSubtotal = (f) => {
@@ -142,7 +148,7 @@ export default function Insumos() {
     setGuardando(true)
     try {
       await api.post('/insumos/compras', {
-        fecha: hoy,
+        fecha: fechaSeleccionada,
         notas: nota,
         detalle,
       })
@@ -153,7 +159,7 @@ export default function Insumos() {
       })
       setTimeout(() => setConfirmacion(null), 3000)
       await resetearFilas()
-      await cargarComprasHoy()
+      await cargarComprasDelDia(fechaSeleccionada)
     } catch (e) {
       setMsg('Error: ' + (e?.response?.data?.detail ?? e.message))
       setTimeout(() => setMsg(''), 4000)
@@ -162,11 +168,25 @@ export default function Insumos() {
     }
   }
 
+  const tituloHistorial = fechaSeleccionada === hoy
+    ? `Compras registradas hoy (${comprasHoy.length})`
+    : `Compras del ${formatearFechaLarga(fechaSeleccionada)} (${comprasHoy.length})`
+
   return (
     <div className="insumos-page">
       <div className="insumos-header">
-        <h2>Compra de insumos</h2>
-        <span className="insumos-fecha">{fechaFormateada}</span>
+        <h2>
+          Compra de insumos — {formatearFechaLarga(fechaSeleccionada)}
+        </h2>
+        <DatePicker
+          modo="single"
+          fecha={fechaSeleccionada}
+          onChange={(nuevaFecha) => {
+            setFechaSeleccionada(nuevaFecha)
+            cargarComprasDelDia(nuevaFecha)
+          }}
+          maxFecha={hoy}
+        />
       </div>
 
       {msg && <div className="insumos-msg">{msg}</div>}
@@ -339,9 +359,7 @@ export default function Insumos() {
       <div className="compras-historial">
         {comprasHoy.length > 0 ? (
           <>
-            <div className="compras-historial-title">
-              Compras registradas hoy ({comprasHoy.length})
-            </div>
+            <div className="compras-historial-title">{tituloHistorial}</div>
             {comprasHoy.map(c => (
               <div
                 key={c.id}
@@ -369,7 +387,12 @@ export default function Insumos() {
             ))}
           </>
         ) : (
-          <p className="compras-sin-datos">No hay compras registradas hoy</p>
+          <p className="compras-sin-datos">
+            {fechaSeleccionada === hoy
+              ? 'No hay compras registradas hoy'
+              : `No hay compras para el ${formatearFechaLarga(fechaSeleccionada)}`
+            }
+          </p>
         )}
       </div>
     </div>
