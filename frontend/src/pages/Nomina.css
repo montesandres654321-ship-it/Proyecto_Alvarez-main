@@ -23,6 +23,45 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* ── Navegación de semanas ── */
+.nomina-nav-semana {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.btn-semana-nav {
+  padding: 8px 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 120ms;
+}
+.btn-semana-nav:hover:not(:disabled) {
+  border-color: var(--red);
+  color: #f87171;
+}
+.btn-semana-nav:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+.btn-semana-hoy {
+  padding: 8px 14px;
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+.btn-semana-hoy:hover {
+  color: var(--text-secondary);
+}
+
 /* ── Toggle lunes festivo ── */
 .festivo-toggle {
   display: flex;

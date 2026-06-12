@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import api, { formatCOP } from '../api/client'
+import DatePicker from '../components/DatePicker'
 import './Nomina.css'
 
 function formatFecha(iso) {
@@ -17,8 +18,39 @@ function formatSemana(inicio, fin) {
   return `${parseInt(ad)}–${parseInt(fd)} ${meses[parseInt(am) - 1]} ${ay}`
 }
 
+function obtenerSabadoActual() {
+  const today = new Date()
+  const dow = today.getDay() // 0=Sun, 6=Sat
+  const diffSab = dow === 6 ? 0 : dow === 0 ? -1 : -(dow + 1)
+  const sab = new Date(today)
+  sab.setDate(today.getDate() + diffSab)
+  return sab.toISOString().split('T')[0]
+}
+
+function proximoSabado() {
+  const today = new Date()
+  const dow = today.getDay()
+  const diffSab = dow === 6 ? 0 : (6 - dow)
+  const sab = new Date(today)
+  sab.setDate(today.getDate() + diffSab)
+  return sab.toISOString().split('T')[0]
+}
+
+function computarSemana(sabStr) {
+  const sab = new Date(sabStr + 'T12:00:00')
+  const dom = new Date(sab); dom.setDate(sab.getDate() + 1)
+  const lun = new Date(sab); lun.setDate(sab.getDate() + 2)
+  return {
+    fecha_sabado: sabStr,
+    fecha_domingo: dom.toISOString().split('T')[0],
+    fecha_lunes: lun.toISOString().split('T')[0],
+    lunes_es_festivo: false,
+  }
+}
+
 export default function Nomina() {
   const [semana, setSemana]               = useState(null)
+  const [fechaSabado, setFechaSabado]     = useState(null)
   const [lunesEsFestivo, setLunesEsFestivo] = useState(false)
   const [trabajadores, setTrabajadores]   = useState([])
   const [asistencia, setAsistencia]       = useState({})
@@ -28,6 +60,17 @@ export default function Nomina() {
   const [expandido, setExpandido]         = useState(null)
   const [msg, setMsg]                     = useState('')
 
+  const sabadoActual = obtenerSabadoActual()
+
+  const cargarSemana = (sabStr, trabajadoresList) => {
+    setSemana(computarSemana(sabStr))
+    const lista = trabajadoresList || trabajadores
+    const init = {}
+    lista.forEach(t => { init[t.id] = { sab: false, dom: false, lun: false } })
+    setAsistencia(init)
+    setLunesEsFestivo(false)
+  }
+
   const cargarDatos = async () => {
     try {
       const [semRes, trabRes] = await Promise.all([
@@ -35,9 +78,9 @@ export default function Nomina() {
         api.get('/nomina/trabajadores'),
       ])
       setSemana(semRes.data)
+      setFechaSabado(semRes.data.fecha_sabado)
       setLunesEsFestivo(semRes.data.lunes_es_festivo)
       setTrabajadores(trabRes.data)
-      // Inicializar asistencia en false para todos
       const init = {}
       trabRes.data.forEach(t => { init[t.id] = { sab: false, dom: false, lun: false } })
       setAsistencia(init)
@@ -56,6 +99,21 @@ export default function Nomina() {
     cargarHistorial()
   }, [])
 
+  const navegarSemana = (direccion) => {
+    if (!fechaSabado) return
+    const d = new Date(fechaSabado + 'T12:00:00')
+    d.setDate(d.getDate() + (direccion * 7))
+    const nuevo = d.toISOString().split('T')[0]
+    setFechaSabado(nuevo)
+    cargarSemana(nuevo)
+  }
+
+  const irSemanaActual = () => {
+    const sab = obtenerSabadoActual()
+    setFechaSabado(sab)
+    cargarSemana(sab)
+  }
+
   const toggleAsistencia = (tid, dia) => {
     setAsistencia(prev => ({
       ...prev,
@@ -63,7 +121,6 @@ export default function Nomina() {
     }))
   }
 
-  // Calcular total por trabajador
   const calcularTotalTrabajador = (t) => {
     const a = asistencia[t.id] || { sab: false, dom: false, lun: false }
     const tarifa = t.tarifa_dia
@@ -127,8 +184,6 @@ export default function Nomina() {
     }
   }
 
-  const mostrarLunes = true // siempre mostramos lunes, con o sin festivo
-
   return (
     <div className="nomina-page">
       {/* ── Encabezado ── */}
@@ -143,6 +198,41 @@ export default function Nomina() {
             </p>
           )}
         </div>
+      </div>
+
+      {/* ── Navegación de semanas ── */}
+      <div className="nomina-nav-semana">
+        <button
+          className="btn-semana-nav"
+          onClick={() => navegarSemana(-1)}
+        >
+          ‹ Anterior
+        </button>
+
+        <DatePicker
+          modo="week"
+          fecha={fechaSabado}
+          onChange={(nuevoSab) => {
+            setFechaSabado(nuevoSab)
+            cargarSemana(nuevoSab)
+          }}
+          maxFecha={proximoSabado()}
+        />
+
+        <button
+          className="btn-semana-nav"
+          onClick={() => navegarSemana(1)}
+          disabled={!fechaSabado || fechaSabado >= sabadoActual}
+        >
+          Siguiente ›
+        </button>
+
+        <button
+          className="btn-semana-hoy"
+          onClick={irSemanaActual}
+        >
+          Semana actual
+        </button>
       </div>
 
       {/* ── Toggle lunes festivo ── */}
