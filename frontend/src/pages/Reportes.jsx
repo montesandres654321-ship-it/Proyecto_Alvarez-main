@@ -855,18 +855,236 @@ function TabGeneral() {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// CONTENIDO PRINCIPAL — 5 TABS
+// TAB 0 — DASHBOARD
+// ════════════════════════════════════════════════════════════════════════════
+
+const COLORES_BARRA = [
+  '#CE1126', '#b50f21', '#8a0a19',
+  '#660816', '#660816',
+  '#3a0a0d', '#3a0a0d', '#3a0a0d', '#3a0a0d', '#3a0a0d',
+]
+
+function computarPeriodo(p) {
+  const hoy = new Date().toISOString().slice(0, 10)
+  const d   = new Date()
+  if (p === 'mes') {
+    const ini = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
+    return { desde: ini, hasta: hoy }
+  }
+  if (p === 'trimestre') {
+    const t = new Date(d); t.setDate(t.getDate() - 90)
+    return { desde: t.toISOString().slice(0, 10), hasta: hoy }
+  }
+  // anio
+  return { desde: `${d.getFullYear()}-01-01`, hasta: hoy }
+}
+
+function TabDashboard() {
+  const [datos,          setDatos]          = useState(null)
+  const [topProductos,   setTopProductos]   = useState([])
+  const [periodo,        setPeriodo]        = useState('mes')
+  const [cargando,       setCargando]       = useState(true)
+  const [cargandoTop,    setCargandoTop]    = useState(false)
+
+  useEffect(() => {
+    const cargar = async () => {
+      setCargando(true)
+      try {
+        const res = await api.get('/reportes/dashboard')
+        setDatos(res.data)
+        setTopProductos(res.data.top_productos || [])
+      } catch {}
+      finally { setCargando(false) }
+    }
+    cargar()
+  }, [])
+
+  useEffect(() => {
+    if (!datos) return
+    const { desde, hasta } = computarPeriodo(periodo)
+    const cargarTop = async () => {
+      setCargandoTop(true)
+      try {
+        const res = await api.get(`/reportes/top-productos?desde=${desde}&hasta=${hasta}&limite=10`)
+        setTopProductos(res.data.productos || [])
+      } catch {}
+      finally { setCargandoTop(false) }
+    }
+    cargarTop()
+  }, [periodo, datos])
+
+  const estrella = datos?.top_productos?.[0]
+  const mejorSemana = datos?.top_semanas?.[0]
+
+  if (cargando) {
+    return (
+      <div>
+        <div className="dashboard-cards-mini">
+          {[1,2,3,4].map(i => (
+            <div key={i} className="dashboard-mini-card">
+              <div className="dashboard-skeleton" style={{ height: 12, width: '60%', marginBottom: 10 }} />
+              <div className="dashboard-skeleton" style={{ height: 24, width: '80%', marginBottom: 8 }} />
+              <div className="dashboard-skeleton" style={{ height: 10, width: '50%' }} />
+            </div>
+          ))}
+        </div>
+        <div className="dashboard-skeleton" style={{ height: 200, borderRadius: 10, marginBottom: 16 }} />
+        <div className="dashboard-skeleton" style={{ height: 200, borderRadius: 10 }} />
+      </div>
+    )
+  }
+
+  if (!datos) return <p className="r-error">Error al cargar el dashboard</p>
+
+  return (
+    <div>
+      {/* ── 4 mini cards ── */}
+      <div className="dashboard-cards-mini">
+        <div className="dashboard-mini-card">
+          <div className="dashboard-mini-label">Ventas hoy</div>
+          <div className="dashboard-mini-val">{formatCOP(datos.hoy.total_ventas)}</div>
+          <div className="dashboard-mini-sub">{datos.hoy.num_facturas} facturas hoy</div>
+        </div>
+        <div className="dashboard-mini-card">
+          <div className="dashboard-mini-label">Efectivo en caja hoy</div>
+          <div className="dashboard-mini-val">{formatCOP(datos.hoy.total_efectivo)}</div>
+          <div className="dashboard-mini-sub">vueltos: {formatCOP(datos.hoy.total_vueltos)}</div>
+        </div>
+        <div className="dashboard-mini-card">
+          <div className="dashboard-mini-label">Producto estrella del mes</div>
+          <div className="dashboard-mini-val rojo" style={{ fontSize: 14 }}>
+            {estrella?.nombre || '—'}
+          </div>
+          <div className="dashboard-mini-sub">{estrella ? `${estrella.unidades} uds vendidas` : 'Sin datos'}</div>
+        </div>
+        <div className="dashboard-mini-card">
+          <div className="dashboard-mini-label">Mejor fin de semana</div>
+          <div className="dashboard-mini-val" style={{ fontSize: 14 }}>
+            {mejorSemana?.label || '—'}
+          </div>
+          <div className="dashboard-mini-sub">{mejorSemana ? formatCOP(mejorSemana.total_ventas) : 'Sin datos'}</div>
+        </div>
+      </div>
+
+      {/* ── Filtro de período ── */}
+      <div className="dashboard-filtro">
+        {[
+          { id: 'mes',       label: 'Último mes' },
+          { id: 'trimestre', label: 'Últimos 3 meses' },
+          { id: 'anio',      label: 'Este año' },
+        ].map(p => (
+          <button
+            key={p.id}
+            className={periodo === p.id ? 'activo' : ''}
+            onClick={() => setPeriodo(p.id)}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Top 10 productos ── */}
+      <div className="dashboard-section">
+        <div className="dashboard-section-title">
+          🏆 Productos más vendidos
+          {cargandoTop && <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 400 }}>  actualizando…</span>}
+        </div>
+        {topProductos.length === 0 ? (
+          <p className="r-sin-datos">Sin ventas en este período</p>
+        ) : (
+          topProductos.map((p, i) => (
+            <div key={p.nombre} className="top-bar-row">
+              <div className="top-bar-pos">{i + 1}</div>
+              <div className="top-bar-nombre" title={p.nombre}>{p.nombre}</div>
+              <div className="top-bar-track">
+                <div
+                  className="top-bar-fill"
+                  style={{ width: `${p.porcentaje}%`, background: COLORES_BARRA[i] || COLORES_BARRA[9] }}
+                >
+                  {p.unidades} uds
+                </div>
+              </div>
+              <div className="top-bar-val">{formatCOP(p.total_cop)}</div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* ── Top fines de semana ── */}
+      <div className="dashboard-section">
+        <div className="dashboard-section-title">
+          📅 Fines de semana más vendidos — {new Date().getFullYear()}
+        </div>
+        {datos.top_semanas.length === 0 ? (
+          <p className="r-sin-datos">Sin datos de fines de semana</p>
+        ) : (() => {
+          const maxSemana = datos.top_semanas[0]?.total_ventas || 1
+          return datos.top_semanas.map((s, i) => (
+            <div key={s.fecha_sabado} className="top-bar-row">
+              <div className="top-bar-pos">{i + 1}</div>
+              <div className="top-bar-nombre">
+                {s.label}{i === 0 ? ' 🏆' : ''}
+              </div>
+              <div className="top-bar-track">
+                <div
+                  className="top-bar-fill"
+                  style={{
+                    width: `${Math.round(s.total_ventas / maxSemana * 100)}%`,
+                    background: COLORES_BARRA[i] || COLORES_BARRA[4],
+                  }}
+                >
+                  {formatCOP(s.total_ventas)}
+                </div>
+              </div>
+              <div className="top-bar-val">{s.num_facturas} fact.</div>
+            </div>
+          ))
+        })()}
+      </div>
+
+      {/* ── Resumen del mes ── */}
+      <div className="dashboard-section">
+        <div className="dashboard-section-title">📆 Resumen del mes actual</div>
+        <div className="gastos-ventas-cards gv-grid-2x2">
+          <div className="gv-card">
+            <div className="gv-label">💰 Ventas</div>
+            <div className="gv-valor">{formatCOP(datos.mes.total_ventas)}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{datos.mes.total_facturas} facturas</div>
+          </div>
+          <div className="gv-card">
+            <div className="gv-label">🛒 Insumos</div>
+            <div className="gv-valor gv-rojo">{formatCOP(datos.mes.total_insumos)}</div>
+          </div>
+          <div className="gv-card">
+            <div className="gv-label">👥 Nómina</div>
+            <div className="gv-valor gv-rojo">{formatCOP(datos.mes.total_nomina)}</div>
+          </div>
+          <div className={`gv-card ganancia-real ${datos.mes.ganancia < 0 ? 'negativa' : ''}`}>
+            <div className="gv-label">📈 Ganancia</div>
+            <div className={`gv-valor ${datos.mes.ganancia >= 0 ? 'gv-verde' : 'gv-rojo'}`}>
+              {datos.mes.ganancia >= 0 ? '↑ ' : '↓ '}{formatCOP(Math.abs(datos.mes.ganancia))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// CONTENIDO PRINCIPAL — 6 TABS
 // ════════════════════════════════════════════════════════════════════════════
 const TABS = [
-  { id: 'dia',      label: '📅 Día' },
-  { id: 'semana',   label: '🗓 Fin de semana' },
-  { id: 'mes',      label: '📆 Mes' },
-  { id: 'trabajador', label: '👤 Trabajador' },
-  { id: 'general',  label: '📊 General' },
+  { id: 'dashboard',   label: '📊 Dashboard' },
+  { id: 'dia',         label: '📅 Día' },
+  { id: 'semana',      label: '🗓 Fin de semana' },
+  { id: 'mes',         label: '📆 Mes' },
+  { id: 'trabajador',  label: '👤 Trabajador' },
+  { id: 'general',     label: '🔍 General' },
 ]
 
 function ReportesContenido() {
-  const [tab, setTab] = useState('dia')
+  const [tab, setTab] = useState('dashboard')
 
   return (
     <div className="reportes-page">
@@ -885,6 +1103,7 @@ function ReportesContenido() {
       </div>
 
       <div className="rep-tab-content">
+        {tab === 'dashboard'  && <TabDashboard />}
         {tab === 'dia'        && <TabDia />}
         {tab === 'semana'     && <TabFinSemana />}
         {tab === 'mes'        && <TabMes />}
