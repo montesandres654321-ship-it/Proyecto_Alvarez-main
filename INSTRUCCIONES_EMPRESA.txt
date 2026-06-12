@@ -1,0 +1,30 @@
+=== GUÍA DE INSTALACIÓN - ALVAREZ FAST FOOD ===
+
+Este documento explica cómo instalar y ejecutar el software de punto de venta (Caja_Alvarez.exe) por primera vez en el computador de la empresa.
+
+--- PASO 1: INSTALAR LA BASE DE DATOS (XAMPP) ---
+El programa necesita una base de datos para guardar todas las facturas y ventas.
+
+1. Descarga e instala XAMPP desde su página oficial: https://www.apachefriends.org/es/index.html
+2. Al instalarlo, puedes darle "Siguiente" a todo, dejando las opciones por defecto.
+3. Una vez instalado, abre el "XAMPP Control Panel".
+4. Busca la fila que dice "MySQL" y presiona el botón "Start". El texto debe ponerse en fondo verde.
+   * Recomendación: Para no tener que hacer esto todos los días, ve al botón "Config" (arriba a la derecha del panel de XAMPP), marca la casilla "MySQL" en "Autostart of modules" y dale a Save.
+
+--- PASO 2: INSTALAR EL SOFTWARE DE CAJA ---
+1. Crea una carpeta en el Escritorio llamada "Alvarez Fast Food" (o donde prefieras tener el programa).
+2. Copia dentro de esa carpeta el archivo ejecutable del programa (por ejemplo: Caja_Alvarez.exe).
+3. Asegúrate de que XAMPP esté abierto y el módulo "MySQL" esté en verde (iniciado).
+4. Dale doble clic al archivo "Caja_Alvarez.exe" para abrir el programa.
+
+--- PASO 3: PRIMER INICIO AUTOMÁTICO ---
+- Al abrir el programa por primera vez, este detectará automáticamente que es una instalación nueva.
+- Se conectará a XAMPP y creará la base de datos "alvarez_db" y todas las tablas necesarias por sí solo.
+- En la parte inferior de la ventana del programa verás un texto verde que dice: "Conectado a MySQL — base 'alvarez_db'". ¡Esto significa que todo salió bien!
+
+--- SOLUCIÓN DE PROBLEMAS COMUNES ---
+- Si al abrir el programa aparece un error rojo abajo diciendo "Sin conexión a MySQL":
+  Asegúrate de haber abierto XAMPP y presionado el botón "Start" en MySQL. Si el botón no se pone verde, puede que otro programa esté bloqueando el puerto de MySQL (generalmente el puerto 3306).
+
+- Si XAMPP da error al iniciar MySQL:
+  A veces instalar MySQL por separado o tener otro software que use bases de datos puede causar conflictos. Asegúrate de detener cualquier otro servicio de MySQL en tu computador.

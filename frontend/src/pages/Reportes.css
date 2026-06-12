@@ -1,0 +1,540 @@
+.reportes-page {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  max-width: 960px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ── Panel de turno ── */
+.panel-turno {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  border-radius: var(--radius-lg);
+  margin-bottom: 16px;
+}
+.panel-turno.abierto { background: #052e16; border: 1px solid #16a34a; }
+.panel-turno.cerrado { background: var(--red-dim); border: 1px solid var(--red-border); }
+
+.turno-info { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.turno-badge { font-weight: 600; font-size: var(--text-sm); }
+.turno-badge.abierto { color: #4ade80; }
+.turno-badge.cerrado { color: #f87171; }
+.turno-cajero { color: #d1fae5; font-size: var(--text-sm); }
+.turno-desde  { color: #86efac; font-size: var(--text-xs); }
+
+.turno-abrir-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.turno-input {
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 6px 10px;
+  font-size: var(--text-sm);
+  width: 160px;
+}
+.turno-input:focus { border-color: var(--green); }
+
+.btn-turno {
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 7px 16px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 36px;
+}
+.btn-turno.abrir  { background: #16a34a; color: white; }
+.btn-turno.abrir:hover  { background: #15803d; }
+.btn-turno.cerrar { background: var(--red); color: white; }
+.btn-turno.cerrar:hover { background: var(--red-hover); }
+.btn-turno:disabled { opacity: 0.6; cursor: not-allowed; }
+.turno-msg { font-size: var(--text-xs); color: #fde68a; margin-left: auto; }
+
+/* ── Header ── */
+.reportes-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.reportes-header h2 {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.reportes-controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.reportes-controls input[type=date] { width: auto; font-size: var(--text-sm); padding: 6px 10px; }
+
+.btn-recargar {
+  padding: 7px 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
+  min-height: 36px;
+}
+.btn-recargar:hover { color: var(--text-primary); border-color: var(--border-default); }
+
+.btn-export {
+  padding: 7px 14px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  min-height: 36px;
+}
+.btn-export.excel { background: #1e7e34; color: #fff; }
+.btn-export.excel:hover { background: #166328; }
+.btn-export.json  { background: var(--bg-elevated); border: 1px solid var(--border-strong); color: var(--text-secondary); }
+.btn-export.json:hover { color: var(--text-primary); }
+
+.r-cargando { color: var(--text-muted); padding: 12px 0; font-size: var(--text-sm); }
+.r-error    { color: var(--danger); padding: 8px 0; font-size: var(--text-sm); }
+.r-sin-datos { color: var(--text-muted); padding: 16px 0; font-size: var(--text-sm); }
+
+/* ── Cards resumen ── */
+.report-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+@media (min-width: 600px) {
+  .report-cards { grid-template-columns: repeat(4, 1fr); }
+}
+.report-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+}
+.report-card-label {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  margin-bottom: 6px;
+}
+.report-card-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+.report-card-sub {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* ── Tabla de ventas ── */
+.tabla-ventas { margin-top: 4px; }
+.ventas-table-wrapper { overflow-x: auto; }
+@media (max-width: 768px) {
+  .ventas-table { min-width: 640px; }
+  .report-cards { grid-template-columns: repeat(2, 1fr) !important; }
+  .turno-card { grid-template-columns: 1fr 1fr; }
+}
+.tabla-ventas h3 {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+
+.ventas-table { width: 100%; border-collapse: collapse; }
+.ventas-table th {
+  padding: 8px 12px;
+  text-align: left;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  border-bottom: 1px solid var(--border-default);
+  font-weight: 600;
+}
+.ventas-table td {
+  padding: 10px 12px;
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  border-bottom: 0.5px solid var(--border-subtle);
+}
+.fila-venta { cursor: pointer; }
+.fila-venta:hover td { background: var(--bg-elevated); }
+.td-factura { font-family: monospace; font-size: var(--text-xs); color: var(--text-muted); }
+.td-total { font-weight: 700; color: var(--gold); font-variant-numeric: tabular-nums; }
+
+.badge-efectivo {
+  background: #0f2010;
+  color: #4ade80;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 500;
+}
+.badge-nequi {
+  background: var(--red-dim);
+  color: #f87171;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 500;
+}
+
+.fila-detalle td { background: var(--bg-base); padding: 0; }
+.detalle-items { padding: 8px 16px; display: flex; flex-direction: column; gap: 4px; }
+.detalle-linea {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+/* ── 5 cards (grid responsivo) ── */
+@media (min-width: 600px) {
+  .report-cards { grid-template-columns: repeat(5, 1fr); }
+}
+.card-vueltos { border-color: var(--red-border); }
+.report-card-value-danger { color: #f87171; }
+
+/* ── Badge otros metodos ── */
+.badge-otro {
+  background: #1a1200;
+  color: #F0A500;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 500;
+}
+
+/* ── Tabla columnas nuevas ── */
+.turno-base { font-size: var(--text-xs); color: #86efac; }
+.td-cajero  { font-size: var(--text-xs); color: var(--text-muted); }
+.td-num     { font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+.td-vuelto  { color: #f87171; }
+
+/* ── Sección de turnos del dia ── */
+.turnos-section { margin-bottom: 24px; }
+.turnos-title {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.turno-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr;
+  gap: 12px;
+  align-items: center;
+}
+@media (max-width: 600px) {
+  .turno-card { grid-template-columns: 1fr 1fr; }
+}
+.turno-card.abierto { border-color: #22c55e; }
+.turno-card.cerrado { border-color: var(--border-default); opacity: 0.85; }
+
+.turno-card-left { display: flex; flex-direction: column; gap: 4px; }
+.turno-card-cajero {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.turno-card-horas { font-size: var(--text-xs); color: var(--text-muted); }
+.turno-abierto-badge { color: #4ade80; font-weight: 600; }
+
+.turno-card-stat { display: flex; flex-direction: column; gap: 2px; }
+.turno-stat-label {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.turno-stat-val {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.turno-stat-sub { font-size: var(--text-xs); color: var(--text-muted); }
+
+.turno-card-caja { }
+.turno-stat-caja {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Anular / eliminar ── */
+.turno-card { position: relative; }
+.turno-card.anulado { opacity: 0.5; }
+
+.btn-del-turno {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 120ms, color 120ms, background 120ms;
+  padding: 0;
+}
+.btn-del-turno:hover { border-color: var(--danger); color: var(--danger); background: var(--red-dim); }
+
+.badge-anulado {
+  display: inline-block;
+  background: var(--red-dim);
+  color: #f87171;
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  vertical-align: middle;
+  margin-left: 6px;
+}
+
+.fila-anulada td { opacity: 0.45; }
+.fila-anulada .td-total { color: var(--text-muted) !important; }
+.fila-anulada { cursor: default !important; }
+.fila-anulada:hover td { background: transparent !important; }
+
+.td-acciones-venta {
+  width: 38px;
+  text-align: center;
+  padding: 6px 4px !important;
+}
+.btn-anular-venta {
+  width: 26px;
+  height: 26px;
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 120ms, color 120ms, background 120ms;
+  padding: 0;
+}
+.btn-anular-venta:hover { border-color: var(--danger); color: var(--danger); background: var(--red-dim); }
+
+/* ── Gastos vs Ventas ── */
+.gastos-ventas-section { margin: 20px 0; }
+.gastos-ventas-title {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.gastos-ventas-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.gv-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+}
+.gv-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  margin-bottom: 6px;
+}
+.gv-valor {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+.gv-verde { color: #22c55e; }
+.gv-rojo  { color: #f87171; }
+
+.gv-grid-2x2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+@media (min-width: 640px) {
+  .gv-grid-2x2 { grid-template-columns: repeat(4, 1fr); }
+}
+.ganancia-real {
+  border-color: #22c55e;
+}
+.ganancia-real.negativa {
+  border-color: var(--danger, #f87171);
+}
+
+/* ── Tabs de reporte ── */
+.rep-tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border-default);
+  padding-bottom: 0;
+}
+.rep-tab {
+  padding: 8px 14px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  transition: color 120ms, border-color 120ms;
+  white-space: nowrap;
+}
+.rep-tab:hover { color: var(--text-secondary); }
+.rep-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+.rep-tab-content { }
+
+/* ── Fin de semana: cards por día ── */
+.fin-semana-dias {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+@media (max-width: 600px) {
+  .fin-semana-dias { grid-template-columns: 1fr; }
+}
+.fin-dia-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+}
+.fin-dia-label {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 2px;
+}
+.fin-dia-fecha {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+.fin-dia-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+.fin-dia-val { font-weight: 600; font-variant-numeric: tabular-nums; }
+.fin-dia-sub { font-size: var(--text-xs); color: var(--text-muted); }
+.fin-sub { font-size: var(--text-xs); color: var(--text-muted); margin-top: 4px; }
+
+.fin-resumen-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+@media (min-width: 640px) {
+  .fin-resumen-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* ── Barras de mes/general ── */
+.mes-barras-section { margin-bottom: 24px; }
+.mes-barras {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 120px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.mes-barra-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 18px;
+  height: 100%;
+  cursor: default;
+}
+.mes-barra-wrap {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+.mes-barra-fill {
+  width: 100%;
+  background: var(--gold);
+  border-radius: 2px 2px 0 0;
+  min-height: 2px;
+  transition: height 200ms;
+}
+.mes-barra-day {
+  font-size: 9px;
+  color: var(--text-muted);
+  margin-top: 3px;
+  white-space: nowrap;
+}
+
+/* ── Top productos / secciones extra ── */
+.top-productos-section { margin-bottom: 24px; }
+
+/* ── Trabajador ── */
+.trab-header-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+.trab-nombre {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.trab-rol {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.trab-tarifa {
+  font-size: var(--text-sm);
+  color: var(--gold);
+  margin-top: 6px;
+  font-weight: 600;
+}

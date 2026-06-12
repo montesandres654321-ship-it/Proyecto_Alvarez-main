@@ -1,0 +1,383 @@
+.insumos-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px 20px;
+}
+.insumos-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.insumos-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.insumos-fecha {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.insumos-msg {
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: #0f2010;
+  color: #4ade80;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+/* TABLA */
+.insumos-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 12px;
+}
+.insumos-tabla th {
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  border-bottom: 1px solid var(--border-default);
+}
+.insumos-tabla td {
+  padding: 8px 12px;
+  border-bottom: 0.5px solid var(--border-subtle);
+  vertical-align: middle;
+}
+.insumos-tabla tr:hover td {
+  background: var(--bg-elevated);
+}
+
+/* INPUTS */
+.insumo-num-input {
+  width: 90px;
+  padding: 7px 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 13px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  outline: none;
+}
+.insumo-num-input:focus { border-color: var(--red); }
+.insumo-precio { color: var(--gold); }
+
+.insumo-unidad-select {
+  padding: 7px 8px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 12px;
+  outline: none;
+}
+
+.insumo-nombre-input {
+  width: 100%;
+  padding: 7px 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+}
+.insumo-nombre-input:focus { border-color: var(--red); }
+
+.insumo-subtotal {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  min-width: 100px;
+}
+
+.btn-remove-fila {
+  width: 24px; height: 24px;
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+.btn-remove-fila:hover {
+  border-color: var(--danger, #f87171);
+  color: var(--danger, #f87171);
+}
+
+/* BOTÓN AGREGAR EXTRA */
+.btn-agregar-extra {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  margin: 8px 0;
+  transition: all 120ms;
+}
+.btn-agregar-extra:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* NOTA */
+.insumo-nota-row { margin: 4px 0; }
+.insumo-nota-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 13px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+/* FOOTER TOTAL */
+.insumos-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  padding: 16px 0;
+  border-top: 1px solid var(--border-default);
+  margin-top: 8px;
+}
+.insumos-total-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+}
+.insumos-total-valor {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+  min-width: 160px;
+  text-align: right;
+}
+.btn-guardar-compra {
+  padding: 12px 24px;
+  background: var(--red);
+  border: none;
+  border-radius: var(--radius-md);
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 120ms;
+  white-space: nowrap;
+}
+.btn-guardar-compra:hover { background: var(--red-hover, #c0392b); }
+.btn-guardar-compra:disabled {
+  background: #2a1010;
+  color: #663333;
+  cursor: not-allowed;
+}
+
+/* HISTORIAL */
+.compras-historial { margin-top: 32px; }
+.compras-historial-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+.compras-sin-datos {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.compra-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+.compra-card:hover { border-color: var(--border-strong); }
+.compra-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.compra-card-hora {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.compra-card-total {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--gold);
+}
+.compra-detalle {
+  margin-top: 10px;
+  border-top: 0.5px solid var(--border-subtle);
+  padding-top: 8px;
+}
+.compra-detalle-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 3px 0;
+}
+
+/* ── Botones por fila ── */
+.fila-actions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+.btn-editar-fila {
+  width: 26px; height: 26px;
+  background: transparent;
+  border: 1px solid #443300;
+  border-radius: var(--radius-sm);
+  color: #F0A500;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex; align-items: center;
+  justify-content: center;
+  transition: all 100ms;
+}
+.btn-editar-fila:hover { background: #1a1200; }
+.btn-eliminar-fila {
+  width: 26px; height: 26px;
+  background: transparent;
+  border: 1px solid #3a1a1a;
+  border-radius: var(--radius-sm);
+  color: #f87171;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex; align-items: center;
+  justify-content: center;
+  transition: all 100ms;
+}
+.btn-eliminar-fila:hover {
+  background: #1a0000;
+  border-color: var(--danger, #f87171);
+}
+.nombre-editando {
+  width: 100%;
+  padding: 5px 8px;
+  background: #161616;
+  border: 1px solid var(--red);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+}
+
+/* ── Toggle modo por fila ── */
+.btn-modo-fila {
+  width: 24px; height: 24px;
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 11px;
+  display: flex; align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 100ms;
+}
+.btn-modo-fila.modo-simple {
+  background: #1a1200;
+  border-color: #F0A500;
+}
+.btn-modo-fila.modo-detallado {
+  background: transparent;
+  border-color: var(--border-strong);
+}
+
+/* Input total directo (modo simple) */
+.insumo-total-directo {
+  width: 100%;
+  text-align: right;
+  color: var(--gold);
+  font-size: 14px;
+  font-weight: 600;
+  background: #1a1200;
+  border-color: #443300;
+}
+.insumo-total-directo:focus {
+  border-color: var(--gold);
+}
+
+/* ── Confirmación visual ── */
+.compra-confirmacion {
+  background: #0a1a0a;
+  border: 1px solid #22c55e;
+  border-radius: var(--radius-xl, 16px);
+  padding: 32px 24px;
+  text-align: center;
+  margin-bottom: 24px;
+  animation: fadeInDown 200ms ease;
+}
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.confirmacion-icon {
+  font-size: 40px;
+  margin-bottom: 10px;
+}
+.confirmacion-titulo {
+  font-size: 18px;
+  font-weight: 600;
+  color: #22c55e;
+  margin-bottom: 4px;
+}
+.confirmacion-hora {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+.confirmacion-total {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 8px;
+}
+.confirmacion-items {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* ── Layout tabla mejorado ── */
+.insumo-nombre-celda {
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Ocultar columna Unidad en mobile */
+@media (max-width: 768px) {
+  .col-unidad,
+  .th-unidad,
+  .insumos-tabla td:nth-child(4) {
+    display: none;
+  }
+  .insumo-nombre-celda { max-width: 120px; }
+  .insumos-total-valor { font-size: 22px; min-width: 120px; }
+}

@@ -1,0 +1,87 @@
+.mesas-bar {
+  height: 48px;
+  background: #0f0f0f;
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  flex-shrink: 0;
+  scrollbar-width: none;
+}
+.mesas-bar::-webkit-scrollbar { display: none; }
+
+.mesa-pill {
+  padding: 7px 14px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  transition: all 120ms ease;
+  user-select: none;
+  flex-shrink: 0;
+  min-height: 36px;
+  background: #1a1a1a;
+  color: var(--text-muted);
+  border-color: var(--border-strong);
+}
+.mesa-pill:hover:not(.activa) {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+  transform: scale(1.03);
+}
+.mesa-pill.activa {
+  background: var(--red);
+  color: white;
+  border-color: transparent;
+}
+.mesa-pill.con-pedido {
+  background: var(--red-dim);
+  color: #f87171;
+  border-color: var(--red);
+}
+.mesa-pill.con-pedido:hover {
+  transform: scale(1.03);
+}
+
+/* Domicilio pills — ámbar */
+.mesa-pill.dom-pill {
+  background: #1a1200;
+  color: #F0A500;
+  border-color: #443300;
+}
+.mesa-pill.dom-pill:hover:not(.dom-activa) {
+  color: #F0A500;
+  border-color: #F0A500;
+  background: #221800;
+}
+.mesa-pill.dom-activa {
+  background: #F0A500;
+  color: #0A0A0A;
+  border-color: transparent;
+  font-weight: 600;
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+  .mesas-bar { padding: 0 10px; }
+  .mesa-pill { padding: 6px 10px; font-size: 11px; }
+}
+
+/* Focus: anillo rojo solo en navegacion por teclado */
+.mesa-pill:focus { outline: none; }
+.mesa-pill:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+
+/* Botón + Domicilio */
+.mesa-pill.nueva-dom {
+  background: transparent;
+  color: #664400;
+  border: 1px dashed #443300;
+}
+.mesa-pill.nueva-dom:hover {
+  color: #F0A500;
+  border-color: #F0A500;
+  background: transparent;
+}

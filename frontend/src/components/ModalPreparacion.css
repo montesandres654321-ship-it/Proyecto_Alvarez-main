@@ -1,0 +1,162 @@
+.modal-prep-box {
+  background: #141414;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-xl);
+  width: 100%;
+  max-width: 400px;
+  overflow: hidden;
+}
+
+.modal-prep-header {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.modal-prep-emoji {
+  font-size: 40px;
+  width: 56px;
+  height: 56px;
+  background: var(--bg-elevated);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.modal-prep-nombre {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.modal-prep-precio {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gold);
+  margin-top: 2px;
+}
+
+.modal-prep-section {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.modal-prep-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  margin-bottom: 10px;
+}
+
+.modal-prep-opciones {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.prep-opcion {
+  padding: 10px 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: all 120ms;
+}
+.prep-opcion.activa {
+  background: var(--red-dim);
+  border-color: var(--red);
+  color: #f87171;
+}
+.prep-opcion:hover:not(.activa) {
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
+}
+
+.modal-prep-nota {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 13px;
+  padding: 10px 12px;
+  resize: none;
+  outline: none;
+  font-family: inherit;
+}
+.modal-prep-nota:focus { border-color: var(--red); }
+
+.modal-prep-cantidad-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-direction: row;
+}
+.modal-prep-cantidad-row .modal-prep-label { margin-bottom: 0; }
+
+.cantidad-control {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.cantidad-control button {
+  width: 40px;
+  height: 40px;
+  background: var(--bg-elevated);
+  border: none;
+  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 300;
+  cursor: pointer;
+  transition: background 100ms;
+  border-radius: 0;
+}
+.cantidad-control button:hover { background: var(--bg-hover); }
+.cantidad-control span {
+  width: 44px;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  border-left: 1px solid var(--border-strong);
+  border-right: 1px solid var(--border-strong);
+  line-height: 40px;
+}
+
+.modal-prep-footer {
+  padding: 14px 18px;
+  display: flex;
+  gap: 8px;
+}
+.btn-prep-cancelar {
+  flex: 1;
+  padding: 12px;
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+}
+.btn-prep-cancelar:hover { background: var(--bg-elevated); }
+.btn-prep-agregar {
+  flex: 2;
+  padding: 12px;
+  background: var(--red);
+  border: none;
+  border-radius: var(--radius-md);
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 120ms;
+}
+.btn-prep-agregar:hover { background: var(--red-hover); }

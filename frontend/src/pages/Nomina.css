@@ -1,0 +1,268 @@
+.nomina-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px 20px;
+}
+
+.nomina-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+.nomina-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+}
+.nomina-subtitulo {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Toggle lunes festivo ── */
+.festivo-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  margin-bottom: 16px;
+}
+.toggle-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+/* ── Mensajes ── */
+.nomina-msg {
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: #0f2010;
+  color: #4ade80;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+.nomina-sin-trabajadores {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  margin: 16px 0;
+}
+
+/* ── Confirmación visual ── */
+.nomina-confirmacion {
+  background: #0a1a0a;
+  border: 1px solid #22c55e;
+  border-radius: var(--radius-xl, 16px);
+  padding: 28px 24px;
+  text-align: center;
+  margin-bottom: 24px;
+  animation: fadeInDown 200ms ease;
+}
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.nomina-confirmacion .confirmacion-icon { font-size: 36px; margin-bottom: 8px; }
+.nomina-confirmacion .confirmacion-titulo {
+  font-size: 18px; font-weight: 600; color: #22c55e; margin-bottom: 4px;
+}
+.nomina-confirmacion .confirmacion-hora {
+  font-size: 12px; color: var(--text-muted); margin-bottom: 12px;
+}
+.nomina-confirmacion .confirmacion-total {
+  font-size: 32px; font-weight: 700; color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Tabla ── */
+.nomina-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+}
+.nomina-tabla th {
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  border-bottom: 1px solid var(--border-default);
+}
+.nomina-tabla td {
+  padding: 10px 12px;
+  border-bottom: 0.5px solid var(--border-subtle);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.nomina-tabla tr:hover td { background: var(--bg-elevated); }
+
+.asistencia-check {
+  width: 20px; height: 20px;
+  accent-color: var(--red);
+  cursor: pointer;
+}
+.td-nombre { color: var(--text-primary); font-weight: 500; }
+.td-rol { color: var(--text-muted); font-size: 12px; }
+.td-dias {
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+}
+.td-total-trabajador {
+  font-weight: 600;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.recargo-badge {
+  font-size: 10px;
+  color: #f87171;
+  margin-left: 4px;
+}
+
+/* Fila total */
+.nomina-total-row td {
+  padding: 14px 12px;
+  border-top: 2px solid var(--border-default);
+  border-bottom: none;
+}
+.total-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+}
+.total-valor {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* ── Acciones ── */
+.nomina-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding: 16px 0;
+  border-top: 1px solid var(--border-default);
+}
+.btn-guardar-nomina {
+  padding: 12px 24px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 120ms;
+}
+.btn-guardar-nomina:hover:not(:disabled) { background: var(--bg-hover); }
+.btn-guardar-nomina:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-pagar-nomina {
+  padding: 12px 28px;
+  background: var(--red);
+  border: none;
+  border-radius: var(--radius-md);
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 120ms;
+  white-space: nowrap;
+}
+.btn-pagar-nomina:hover:not(:disabled) { background: var(--red-hover, #c0392b); }
+.btn-pagar-nomina:disabled {
+  background: #2a1010;
+  color: #663333;
+  cursor: not-allowed;
+}
+
+/* ── Historial ── */
+.nomina-historial { margin-top: 32px; }
+.nomina-historial-titulo {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+.nomina-hist-item {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+.nomina-hist-item:hover { border-color: var(--border-strong); }
+.nomina-hist-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.nomina-hist-izq {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.nomina-hist-semana {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.nomina-hist-total {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+.badge-pagada {
+  background: #0f2010;
+  color: #4ade80;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 500;
+}
+.badge-borrador {
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 11px;
+}
+.nomina-hist-detalle {
+  margin-top: 10px;
+  border-top: 0.5px solid var(--border-subtle);
+  padding-top: 8px;
+}
+.nomina-hist-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 3px 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .nomina-tabla th:nth-child(2),
+  .nomina-tabla td:nth-child(2) { display: none; }
+  .total-valor { font-size: 18px; }
+  .btn-pagar-nomina { font-size: 13px; padding: 10px 16px; }
+}

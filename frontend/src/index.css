@@ -1,0 +1,151 @@
+:root {
+  /* Fondos */
+  --bg-base:      #0A0A0A;
+  --bg-surface:   #111111;
+  --bg-elevated:  #161616;
+  --bg-hover:     #1e1e1e;
+  --bg-input:     #141414;
+
+  /* Bordes */
+  --border-subtle:  #1a1a1a;
+  --border-default: #222222;
+  --border-strong:  #2a2a2a;
+
+  /* Rojo Colombia */
+  --red:        #CE1126;
+  --red-hover:  #b50f21;
+  --red-dim:    #1e0a0a;
+  --red-border: #3a1a1a;
+
+  /* Oro — solo precios y totales */
+  --gold:       #F0A500;
+  --gold-dim:   #1a1200;
+
+  /* Texto */
+  --text-primary:   #EEEEEE;
+  --text-secondary: #888888;
+  --text-muted:     #444444;
+  --text-disabled:  #333333;
+
+  /* Estados */
+  --green:  #22c55e;
+  --amber:  #f59e0b;
+  --danger: #ef4444;
+
+  /* Radios */
+  --radius-sm:   6px;
+  --radius-md:   8px;
+  --radius-lg:   10px;
+  --radius-xl:   12px;
+  --radius-full: 99px;
+
+  /* Tipografía */
+  --text-xs:   11px;
+  --text-sm:   12px;
+  --text-base: 13px;
+  --text-md:   14px;
+  --text-lg:   15px;
+  --text-xl:   18px;
+  --text-2xl:  24px;
+  --text-3xl:  32px;
+
+  /* Aliases de compatibilidad */
+  --bg:      var(--bg-base);
+  --bg2:     var(--bg-surface);
+  --bg3:     var(--bg-elevated);
+  --accent:  var(--red);
+  --accent2: var(--gold);
+  --text:    var(--text-primary);
+  --text2:   var(--text-secondary);
+  --border:  var(--border-default);
+  --success: var(--green);
+  --radius:  var(--radius-md);
+  --shadow:  0 2px 8px rgba(0,0,0,0.5);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { height: 100%; }
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: var(--text-md);
+  color: var(--text-primary);
+  background: var(--bg-base);
+  height: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none;
+}
+
+#root { height: 100%; }
+
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: var(--text-md);
+  transition: background 120ms, border-color 120ms, transform 100ms, filter 120ms;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+button:active:not(:disabled) { transform: scale(0.97); }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+input, select, textarea {
+  font-family: inherit;
+  font-size: var(--text-md);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  width: 100%;
+  outline: none;
+  transition: border-color 120ms;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--red);
+}
+
+a { color: var(--red); text-decoration: none; }
+
+/* Scrollbar global */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 2px; }
+
+/* Spinner de carga */
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.25);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 600ms linear infinite;
+  vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Focus visible — nunca ocultar sin reemplazo */
+:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 2px;
+}
+:focus:not(:focus-visible) { outline: none; }
+
+/* prefers-reduced-motion — desactiva animaciones y transiciones */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .spinner { animation: none; border-top-color: white; opacity: 0.8; }
+}

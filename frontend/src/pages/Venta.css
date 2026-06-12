@@ -1,0 +1,185 @@
+.venta-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.banner-sin-turno {
+  background: var(--red-dim);
+  border-bottom: 1px solid var(--red-border);
+  color: #f87171;
+  padding: 8px 16px;
+  font-size: var(--text-sm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.btn-abrir-caja {
+  background: var(--red);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  min-height: 36px;
+}
+.btn-abrir-caja:hover { background: var(--red-hover); }
+
+.content-area {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.product-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 1px solid var(--border-subtle);
+}
+
+.category-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+.category-tabs::-webkit-scrollbar { display: none; }
+
+.cat-tab {
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  white-space: nowrap;
+  transition: background 120ms, color 120ms;
+  min-height: 36px;
+}
+.cat-tab.inactive {
+  background: transparent;
+  color: var(--text-muted);
+}
+.cat-tab.inactive:hover {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+.cat-tab.active {
+  background: var(--red);
+  color: white;
+}
+.cat-tab:focus { outline: none; }
+.cat-tab:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+
+.product-loading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: var(--text-base);
+}
+
+/* Ticket post-venta */
+.venta-ticket {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+  padding: 24px;
+  color: var(--text-secondary);
+}
+.venta-ticket h2 { font-size: var(--text-2xl); color: var(--text-primary); }
+.ticket-id {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  font-family: monospace;
+  background: var(--bg-elevated);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+}
+.btn-nueva-venta {
+  padding: 14px 32px;
+  background: var(--red);
+  color: #fff;
+  font-size: var(--text-md);
+  font-weight: 700;
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  margin-top: 8px;
+  min-height: 48px;
+}
+.btn-nueva-venta:hover { background: var(--red-hover); }
+
+/* FAB para carrito mobile */
+.cart-fab {
+  display: none;
+}
+.cart-backdrop {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .content-area { flex-direction: column; }
+  .product-panel { border-right: none; flex: 1; overflow: hidden; }
+
+  .cart-fab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    bottom: 44px;
+    right: 16px;
+    width: 56px;
+    height: 56px;
+    background: var(--red);
+    border-radius: 50%;
+    border: none;
+    font-size: 22px;
+    box-shadow: 0 4px 20px rgba(206,17,38,0.45);
+    cursor: pointer;
+    z-index: 200;
+  }
+  .cart-fab:hover { background: var(--red-hover); }
+
+  .cart-fab-badge {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 18px;
+    height: 18px;
+    background: white;
+    color: var(--red);
+    border-radius: 50%;
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+
+  .cart-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 99;
+  }
+}

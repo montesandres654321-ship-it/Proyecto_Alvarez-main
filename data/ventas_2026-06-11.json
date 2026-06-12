@@ -1,0 +1,14 @@
+{
+  "fecha": "2026-06-11",
+  "resumen": {
+    "total_ventas": 0,
+    "total_efectivo": 0,
+    "total_nequi": 0,
+    "total_transferencia": 0,
+    "total_otros": 0,
+    "total_vueltos": 0,
+    "total_facturas": 0
+  },
+  "turnos": [],
+  "ventas": []
+}

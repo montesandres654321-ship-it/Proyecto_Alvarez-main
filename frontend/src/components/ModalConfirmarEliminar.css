@@ -1,0 +1,106 @@
+.modal-del-box {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-xl);
+  width: 420px;
+  max-width: calc(100vw - 32px);
+  overflow: hidden;
+}
+
+.modal-del-header {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.modal-del-titulo {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.modal-del-body {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.modal-del-detalle {
+  background: var(--bg-elevated);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.del-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--text-sm);
+}
+.del-label { color: var(--text-muted); }
+.del-val   { color: var(--text-primary); font-weight: 500; }
+.del-mono  { font-family: monospace; font-size: var(--text-xs); }
+
+.modal-del-warn {
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  line-height: 1.4;
+}
+.modal-del-warn.danger {
+  background: var(--red-dim);
+  border: 1px solid var(--red-border);
+  color: #f87171;
+}
+.modal-del-warn.amber {
+  background: #1a1200;
+  border: 1px solid #443300;
+  color: #fbbf24;
+}
+
+.modal-del-pin-section { display: flex; flex-direction: column; gap: 6px; }
+.modal-del-pin-label {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-weight: 600;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+.modal-del-pin-input {
+  width: 120px;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: .2em;
+  padding: 10px 12px;
+}
+.modal-del-pin-error {
+  font-size: var(--text-xs);
+  color: var(--danger);
+  font-weight: 500;
+}
+
+.modal-del-footer {
+  display: flex;
+  gap: 8px;
+  padding: 12px 20px 16px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.btn-del-confirmar {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 40px;
+  transition: filter 120ms;
+}
+.btn-del-confirmar:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-del-confirmar:not(:disabled):hover { filter: brightness(1.1); }
+.btn-del-confirmar.danger { background: #dc2626; color: white; }
+.btn-del-confirmar.amber  { background: var(--gold); color: #0a0a0a; }

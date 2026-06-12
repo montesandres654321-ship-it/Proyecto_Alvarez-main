@@ -1,0 +1,62 @@
+[
+  {
+    "id_factura": "FAC-2026-0003",
+    "fecha_hora": "2026-06-09 21:07:05-05:00",
+    "metodo_pago": "Efectivo",
+    "tipo_entrega": "Mesa",
+    "telefono_cliente": "",
+    "total_pagar": 1000,
+    "items": [
+      {
+        "producto_id": "gas-mini",
+        "producto": "Gaseosa Mini",
+        "cantidad": 1,
+        "precio_unitario": 1000,
+        "notas_modificacion": "",
+        "es_bebida_incluida": false,
+        "es_personalizado": false,
+        "categoria": "GASEOSAS"
+      }
+    ]
+  },
+  {
+    "id_factura": "FAC-2026-0002",
+    "fecha_hora": "2026-06-09 21:01:14-05:00",
+    "metodo_pago": "Efectivo",
+    "tipo_entrega": "Mesa",
+    "telefono_cliente": "",
+    "total_pagar": 28000,
+    "items": [
+      {
+        "producto_id": "pic-cerdo",
+        "producto": "Picada de Cerdo",
+        "cantidad": 2,
+        "precio_unitario": 14000,
+        "notas_modificacion": "sin sal",
+        "es_bebida_incluida": false,
+        "es_personalizado": false,
+        "categoria": "PICADAS"
+      }
+    ]
+  },
+  {
+    "id_factura": "FAC-2026-0001",
+    "fecha_hora": "2026-06-09 16:46:47-05:00",
+    "metodo_pago": "Nequi",
+    "tipo_entrega": "Domicilio",
+    "telefono_cliente": "",
+    "total_pagar": 14000,
+    "items": [
+      {
+        "producto_id": "pic-cerdo",
+        "producto": "Picada de Cerdo",
+        "cantidad": 1,
+        "precio_unitario": 14000,
+        "notas_modificacion": "",
+        "es_bebida_incluida": false,
+        "es_personalizado": false,
+        "categoria": "PICADAS"
+      }
+    ]
+  }
+]
