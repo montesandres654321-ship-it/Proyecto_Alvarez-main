@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: alvarez-pos
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: >-
+      pip install -r requirements_api.txt &&
+      cd frontend &&
+      npm ci &&
+      npm run build &&
+      cd ..
+    startCommand: uvicorn backend.main_api:app --host 0.0.0.0 --port $PORT --workers 1
+    envVars:
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASS
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: RENDER
+        value: "true"

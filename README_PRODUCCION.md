@@ -135,6 +135,57 @@ solo proceso. **No modifique el comando de inicio agregando `--workers`.**
 
 ---
 
+---
+
+## Deploy en la nube (Render + Railway)
+
+Esta sección es para quien administra el sistema en producción.
+
+### PRIMER USO — Cambiar el PIN de administrador
+
+> ⚠️ **IMPORTANTE**: El PIN por defecto es **1234**. Cámbielo inmediatamente.
+>
+> 1. Abra el sistema en el navegador
+> 2. Vaya a **Admin** en el menú superior
+> 3. Ingrese el PIN actual: **1234**
+> 4. En la sección **Configuración**, cambie el campo "PIN administrador"
+> 5. Haga clic en **Guardar**
+>
+> Anote el PIN nuevo en un lugar seguro. Si lo olvida, contacte al técnico.
+
+### Variables de entorno en Render
+
+Configure estas variables en el panel de Render → Environment:
+
+| Variable       | Valor (Railway lo provee)         |
+|----------------|-----------------------------------|
+| `DB_HOST`      | Host MySQL de Railway             |
+| `DB_PORT`      | Puerto MySQL (generalmente 3306)  |
+| `DB_USER`      | Usuario MySQL de Railway          |
+| `DB_PASS`      | Contraseña MySQL de Railway       |
+| `DB_NAME`      | `alvarez_fastfood`                |
+| `FRONTEND_URL` | `https://tu-app.onrender.com`     |
+| `RENDER`       | `true`                            |
+
+### Migrar la BD local a Railway
+
+```bash
+# Instale las dependencias y configure las variables de entorno
+DB_HOST=... DB_PORT=... DB_USER=... DB_PASS=... DB_NAME=alvarez_fastfood \
+  python scripts/migrar_a_railway.py
+```
+
+### Monitoreo con UptimeRobot
+
+Configure UptimeRobot para monitorear:
+```
+https://tu-app.onrender.com/health
+```
+El endpoint responde `{"status": "ok"}` cuando todo funciona.
+Si responde `"degraded"`, hay un problema con la base de datos.
+
+---
+
 ## Soporte
 
 Para problemas técnicos, comuníquese con el desarrollador.

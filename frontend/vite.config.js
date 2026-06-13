@@ -46,6 +46,8 @@ export default defineConfig({
       '/reportes': 'http://localhost:8000',
       '/configuracion': 'http://localhost:8000',
       '/turnos': 'http://localhost:8000',
+      '/insumos': 'http://localhost:8000',
+      '/nomina': 'http://localhost:8000',
       '/health': 'http://localhost:8000',
       '/ws': { target: 'ws://localhost:8000', ws: true },
     },

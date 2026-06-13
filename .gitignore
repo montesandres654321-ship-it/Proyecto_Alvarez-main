@@ -4,3 +4,10 @@ logs/
 backups/
 *.pyc
 .env
+.env.local
+db_local.py
+node_modules/
+frontend/dist/
+data/tickets/
+backup_migracion_*.sql
+*.egg-info/

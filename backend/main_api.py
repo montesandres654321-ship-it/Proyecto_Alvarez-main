@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import logging.handlers
+import os
 import time
 from pathlib import Path
 
@@ -24,19 +25,22 @@ _FRONTEND_DIST = _ROOT / "frontend" / "dist"
 _LOGS_DIR = _ROOT / "logs"
 _LOGS_DIR.mkdir(exist_ok=True)
 
-# ── Logging a archivo ─────────────────────────────────────────────────────
+# ── Logging: stdout en Render, archivo en local ───────────────────────────
 
-_file_handler = logging.handlers.TimedRotatingFileHandler(
-    filename=_LOGS_DIR / "api.log",
-    when="midnight",
-    backupCount=7,
-    encoding="utf-8",
-)
-_file_handler.setFormatter(
-    logging.Formatter("%(asctime)s %(levelname)s %(name)s — %(message)s")
-)
+_formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s — %(message)s")
+
+if os.environ.get("RENDER"):
+    _handler: logging.Handler = logging.StreamHandler()
+else:
+    _handler = logging.handlers.TimedRotatingFileHandler(
+        filename=_LOGS_DIR / "api.log",
+        when="midnight",
+        backupCount=7,
+        encoding="utf-8",
+    )
+_handler.setFormatter(_formatter)
 for _log in ("uvicorn", "uvicorn.access", "uvicorn.error"):
-    logging.getLogger(_log).addHandler(_file_handler)
+    logging.getLogger(_log).addHandler(_handler)
 
 _APP_START = time.time()
 
@@ -48,11 +52,26 @@ app = FastAPI(
     description="API REST del sistema de ventas Alvarez Fast Food",
 )
 
+# CORS: en producción se restringe al dominio del frontend (FRONTEND_URL).
+# En desarrollo se permite todo con allow_origins=["*"].
+_FRONTEND_URL = os.environ.get("FRONTEND_URL", "*")
+_origins = (
+    ["*"]
+    if _FRONTEND_URL == "*"
+    else [
+        _FRONTEND_URL,
+        "http://localhost:5173",
+        "http://localhost:8000",
+    ]
+)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_origins,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*", "X-PIN"],
+    expose_headers=["Content-Disposition"],
 )
 
 # ── Middleware PIN para rutas /admin/* ────────────────────────────────────
@@ -92,10 +111,11 @@ def health():
     from persistencia import probar_conexion
     ok, msg = probar_conexion()
     return {
-        "ok": ok,
+        "status": "ok" if ok else "degraded",
         "db": msg,
         "version": "1.0.0",
         "uptime_segundos": int(time.time() - _APP_START),
+        "environment": os.environ.get("RENDER", "local"),
     }
 
 
@@ -115,7 +135,10 @@ async def _backup_startup():
 @app.on_event("startup")
 async def on_startup():
     set_event_loop(asyncio.get_running_loop())
-    inicializar_bd()
+    try:
+        inicializar_bd()
+    except Exception as e:
+        logging.getLogger("uvicorn.error").error("BD no disponible al arrancar: %s", e)
     asyncio.create_task(_backup_startup())
     # Montar assets estáticos del build de React
     if (_FRONTEND_DIST / "assets").exists():
