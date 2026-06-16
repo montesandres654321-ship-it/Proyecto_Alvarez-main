@@ -1,4 +1,4 @@
-"""Persistencia en MySQL / MariaDB (XAMPP local)."""
+"""Persistencia en PostgreSQL (Supabase)."""
 
 from __future__ import annotations
 
@@ -10,16 +10,17 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Iterator
 
-import pymysql
-from pymysql.cursors import DictCursor
+import psycopg2
+import psycopg2.extras
 
 from config import (
   DATA_DIR,
-  MYSQL_DATABASE,
-  MYSQL_HOST,
-  MYSQL_PASSWORD,
-  MYSQL_PORT,
-  MYSQL_USER,
+  DATABASE_URL,
+  PG_HOST,
+  PG_PORT,
+  PG_USER,
+  PG_PASSWORD,
+  PG_DATABASE,
   NEQUI_NUMERO,
   PREFIJO_FACTURA,
 )
@@ -27,38 +28,38 @@ from modelos import Factura, Producto
 
 
 class ErrorBaseDatos(Exception):
-  """Error de conexión o consulta MySQL."""
+  """Error de conexión o consulta de base de datos."""
 
 
-def _parametros_conexion(con_base: bool = True) -> dict[str, Any]:
-  params: dict[str, Any] = {
-    "host": MYSQL_HOST,
-    "port": MYSQL_PORT,
-    "user": MYSQL_USER,
-    "password": MYSQL_PASSWORD,
-    "charset": "utf8mb4",
-    "cursorclass": DictCursor,
-    "autocommit": False,
-    "connect_timeout": 5,
-    "read_timeout": 15,
-    "write_timeout": 15,
+def _get_connection() -> "psycopg2.connection":
+  """Abre una conexión psycopg2 con RealDictCursor como cursor por defecto."""
+  kwargs: dict[str, Any] = {
+    "cursor_factory": psycopg2.extras.RealDictCursor,
+    "connect_timeout": 10,
   }
-  if con_base:
-    params["database"] = MYSQL_DATABASE
-  return params
+  if DATABASE_URL:
+    kwargs["dsn"] = DATABASE_URL
+  else:
+    kwargs.update({
+      "host": PG_HOST,
+      "port": PG_PORT,
+      "user": PG_USER,
+      "password": PG_PASSWORD,
+      "dbname": PG_DATABASE,
+    })
+  return psycopg2.connect(**kwargs)
 
 
 @contextmanager
-def conexion() -> Iterator[pymysql.Connection]:
+def conexion() -> Iterator["psycopg2.connection"]:
   try:
-    conn = pymysql.connect(**_parametros_conexion(con_base=True))
-  except pymysql.Error as e:
+    conn = _get_connection()
+  except psycopg2.Error as e:
     raise ErrorBaseDatos(
-      f"No se pudo conectar a MySQL en {MYSQL_HOST}:{MYSQL_PORT} "
-      f"(base '{MYSQL_DATABASE}').\n"
-      "¿Está MySQL iniciado en XAMPP?\n"
+      f"No se pudo conectar a PostgreSQL ({PG_HOST}:{PG_PORT}).\n"
       f"Detalle: {e}"
     ) from e
+  conn.autocommit = False
   try:
     yield conn
     conn.commit()
@@ -70,110 +71,92 @@ def conexion() -> Iterator[pymysql.Connection]:
 
 
 def _crear_base_y_tablas() -> None:
-  try:
-    conn = pymysql.connect(**_parametros_conexion(con_base=False))
-  except pymysql.Error as e:
-    raise ErrorBaseDatos(
-      f"No se pudo conectar al servidor MySQL ({MYSQL_HOST}). "
-      "Inicie MySQL en el panel de control de XAMPP."
-    ) from e
-
-  try:
-    with conn.cursor() as cur:
-      cur.execute(
-        f"CREATE DATABASE IF NOT EXISTS `{MYSQL_DATABASE}` "
-        "CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
-      )
-    conn.commit()
-    conn.close()
-
-    conn = pymysql.connect(**_parametros_conexion(con_base=True))
+  with conexion() as conn:
     with conn.cursor() as cur:
       cur.execute(
         """
         CREATE TABLE IF NOT EXISTS contador_facturas (
-          anio INT NOT NULL PRIMARY KEY,
+          anio          INT NOT NULL PRIMARY KEY,
           ultimo_numero INT NOT NULL DEFAULT 0
-        ) ENGINE=InnoDB
+        )
         """
       )
       cur.execute(
         """
         CREATE TABLE IF NOT EXISTS ventas (
-          id_factura       VARCHAR(24) NOT NULL PRIMARY KEY,
-          fecha_hora       VARCHAR(32) NOT NULL,
-          metodo_pago      VARCHAR(20) NOT NULL,
-          tipo_entrega     VARCHAR(20) NOT NULL,
-          telefono_cliente VARCHAR(20) DEFAULT NULL,
-          total_pagar      INT NOT NULL,
-          turno_id         INT DEFAULT NULL,
-          monto_recibido   INT NOT NULL DEFAULT 0,
-          vuelto_dado      INT NOT NULL DEFAULT 0,
-          anulada          TINYINT(1) NOT NULL DEFAULT 0,
-          motivo_anulacion VARCHAR(200) DEFAULT NULL,
-          INDEX idx_ventas_fecha (fecha_hora),
-          INDEX idx_ventas_pago (metodo_pago)
-        ) ENGINE=InnoDB
+          id_factura       VARCHAR(24)  NOT NULL PRIMARY KEY,
+          fecha_hora       VARCHAR(32)  NOT NULL,
+          metodo_pago      VARCHAR(20)  NOT NULL,
+          tipo_entrega     VARCHAR(20)  NOT NULL,
+          telefono_cliente VARCHAR(20)  DEFAULT NULL,
+          total_pagar      INT          NOT NULL,
+          turno_id         INT          DEFAULT NULL,
+          monto_recibido   INT          NOT NULL DEFAULT 0,
+          vuelto_dado      INT          NOT NULL DEFAULT 0,
+          anulada          SMALLINT     NOT NULL DEFAULT 0,
+          motivo_anulacion VARCHAR(200) DEFAULT NULL
+        )
         """
       )
+      cur.execute("CREATE INDEX IF NOT EXISTS idx_ventas_fecha ON ventas(fecha_hora)")
+      cur.execute("CREATE INDEX IF NOT EXISTS idx_ventas_pago  ON ventas(metodo_pago)")
       cur.execute(
         """
         CREATE TABLE IF NOT EXISTS lineas_venta (
-          id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-          id_factura VARCHAR(24) NOT NULL,
-          producto_id VARCHAR(64) NOT NULL,
-          producto_nombre VARCHAR(255) NOT NULL,
-          cantidad INT NOT NULL,
-          precio_unitario INT NOT NULL,
+          id                 SERIAL      PRIMARY KEY,
+          id_factura         VARCHAR(24) NOT NULL,
+          producto_id        VARCHAR(64) NOT NULL,
+          producto_nombre    VARCHAR(255) NOT NULL,
+          cantidad           INT         NOT NULL,
+          precio_unitario    INT         NOT NULL,
           notas_modificacion TEXT,
-          es_bebida_incluida TINYINT(1) NOT NULL DEFAULT 0,
-          es_personalizado TINYINT(1) NOT NULL DEFAULT 0,
-          categoria VARCHAR(64) DEFAULT '',
-          INDEX idx_lineas_factura (id_factura),
+          es_bebida_incluida SMALLINT    NOT NULL DEFAULT 0,
+          es_personalizado   SMALLINT    NOT NULL DEFAULT 0,
+          categoria          VARCHAR(64) DEFAULT '',
           CONSTRAINT fk_lineas_venta_factura
             FOREIGN KEY (id_factura) REFERENCES ventas(id_factura)
             ON DELETE CASCADE
-        ) ENGINE=InnoDB
+        )
         """
       )
+      cur.execute("CREATE INDEX IF NOT EXISTS idx_lineas_factura ON lineas_venta(id_factura)")
       cur.execute(
         """
         CREATE TABLE IF NOT EXISTS productos (
-          id          INT AUTO_INCREMENT PRIMARY KEY,
-          producto_id VARCHAR(30) NOT NULL,
-          nombre      VARCHAR(100) NOT NULL,
-          precio      INT NOT NULL,
-          categoria   VARCHAR(50) NOT NULL,
-          ingredientes TEXT DEFAULT NULL,
-          activo      TINYINT(1) NOT NULL DEFAULT 1,
-          orden       INT NOT NULL DEFAULT 0,
-          cat_orden   INT NOT NULL DEFAULT 0,
-          created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          updated_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          UNIQUE KEY uk_producto_id (producto_id),
-          INDEX idx_cat_activo (categoria, activo)
-        ) ENGINE=InnoDB
+          id           SERIAL       PRIMARY KEY,
+          producto_id  VARCHAR(30)  NOT NULL UNIQUE,
+          nombre       VARCHAR(100) NOT NULL,
+          precio       INT          NOT NULL,
+          categoria    VARCHAR(50)  NOT NULL,
+          ingredientes TEXT         DEFAULT NULL,
+          activo       SMALLINT     NOT NULL DEFAULT 1,
+          orden        INT          NOT NULL DEFAULT 0,
+          cat_orden    INT          NOT NULL DEFAULT 0,
+          created_at   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
         """
       )
+      cur.execute("CREATE INDEX IF NOT EXISTS idx_cat_activo ON productos(categoria, activo)")
       cur.execute(
         """
         CREATE TABLE IF NOT EXISTS configuracion (
           clave       VARCHAR(50)  NOT NULL PRIMARY KEY,
           valor       VARCHAR(255) NOT NULL,
           descripcion VARCHAR(200) DEFAULT NULL
-        ) ENGINE=InnoDB
+        )
         """
       )
-      # Seed inicial — INSERT IGNORE preserva los valores que el dueño haya cambiado
       cur.execute(
         """
-        INSERT IGNORE INTO configuracion (clave, valor, descripcion) VALUES
+        INSERT INTO configuracion (clave, valor, descripcion) VALUES
           ('nequi_numero',       %s, 'Número de cuenta Nequi para cobros'),
           ('nombre_restaurante', %s, 'Nombre del restaurante'),
           ('prefijo_factura',    %s, 'Prefijo base de facturas (el año se añade automáticamente)'),
           ('pin_admin',          %s, 'PIN de 4 dígitos para acceder a reportes y configuración'),
           ('domicilio_mensaje',  %s, 'Mensaje en el ticket del cliente'),
           ('num_mesas',          %s, 'Cantidad de mesas del restaurante')
+        ON CONFLICT (clave) DO NOTHING
         """,
         (
           NEQUI_NUMERO,
@@ -187,40 +170,42 @@ def _crear_base_y_tablas() -> None:
       cur.execute(
         """
         CREATE TABLE IF NOT EXISTS turnos (
-          id                INT AUTO_INCREMENT PRIMARY KEY,
+          id                SERIAL      PRIMARY KEY,
           cajero            VARCHAR(100) NOT NULL DEFAULT 'Cajero',
-          fecha_apertura    DATETIME NOT NULL,
-          efectivo_inicial  INT NOT NULL DEFAULT 0,
-          fecha_cierre      DATETIME DEFAULT NULL,
-          total_ventas      INT NOT NULL DEFAULT 0,
-          total_vueltos     INT NOT NULL DEFAULT 0,
-          efectivo_esperado INT NOT NULL DEFAULT 0,
-          estado            ENUM('abierto','cerrado') NOT NULL DEFAULT 'abierto',
-          INDEX idx_turnos_estado (estado),
-          INDEX idx_turnos_fecha (fecha_apertura)
-        ) ENGINE=InnoDB
+          fecha_apertura    TIMESTAMP   NOT NULL,
+          efectivo_inicial  INT         NOT NULL DEFAULT 0,
+          fecha_cierre      TIMESTAMP   DEFAULT NULL,
+          total_ventas      INT         NOT NULL DEFAULT 0,
+          total_vueltos     INT         NOT NULL DEFAULT 0,
+          efectivo_esperado INT         NOT NULL DEFAULT 0,
+          anulado           SMALLINT    NOT NULL DEFAULT 0,
+          estado            VARCHAR(10) NOT NULL DEFAULT 'abierto'
+            CHECK (estado IN ('abierto', 'cerrado'))
+        )
         """
       )
+      cur.execute("CREATE INDEX IF NOT EXISTS idx_turnos_estado ON turnos(estado)")
+      cur.execute("CREATE INDEX IF NOT EXISTS idx_turnos_fecha  ON turnos(fecha_apertura)")
       anio = datetime.now().year
       cur.execute(
-        "INSERT IGNORE INTO contador_facturas (anio, ultimo_numero) VALUES (%s, 0)",
+        "INSERT INTO contador_facturas (anio, ultimo_numero) VALUES (%s, 0) ON CONFLICT DO NOTHING",
         (anio,),
       )
       cur.execute(
         """
         CREATE TABLE IF NOT EXISTS preparaciones (
-          id       INT AUTO_INCREMENT PRIMARY KEY,
-          categoria VARCHAR(50) NOT NULL,
-          opcion   VARCHAR(100) NOT NULL,
-          orden    INT NOT NULL DEFAULT 0,
-          activo   TINYINT(1) NOT NULL DEFAULT 1,
-          UNIQUE KEY uk_cat_opcion (categoria, opcion)
-        ) ENGINE=InnoDB
+          id        SERIAL      PRIMARY KEY,
+          categoria VARCHAR(50)  NOT NULL,
+          opcion    VARCHAR(100) NOT NULL,
+          orden     INT          NOT NULL DEFAULT 0,
+          activo    SMALLINT     NOT NULL DEFAULT 1,
+          UNIQUE (categoria, opcion)
+        )
         """
       )
       cur.execute(
         """
-        INSERT IGNORE INTO preparaciones (categoria, opcion, orden) VALUES
+        INSERT INTO preparaciones (categoria, opcion, orden) VALUES
           ('PICADAS', 'Con todo', 1),
           ('PICADAS', 'Sin verduras', 2),
           ('PICADAS', 'Sin salsa', 3),
@@ -239,111 +224,95 @@ def _crear_base_y_tablas() -> None:
           ('HAMBURGUESAS', 'Con todo', 1),
           ('HAMBURGUESAS', 'Sin verduras', 2),
           ('HAMBURGUESAS', 'Sin queso', 3)
+        ON CONFLICT (categoria, opcion) DO NOTHING
         """
       )
       cur.execute(
         """
         CREATE TABLE IF NOT EXISTS insumos_catalogo (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          nombre VARCHAR(100) NOT NULL,
-          unidad VARCHAR(20) NOT NULL DEFAULT 'und',
-          precio_ref INT DEFAULT 0,
-          activo TINYINT DEFAULT 1,
-          orden INT DEFAULT 0
-        ) ENGINE=InnoDB
+          id         SERIAL       PRIMARY KEY,
+          nombre     VARCHAR(100) NOT NULL,
+          unidad     VARCHAR(20)  NOT NULL DEFAULT 'und',
+          precio_ref INT          DEFAULT 0,
+          activo     SMALLINT     DEFAULT 1,
+          orden      INT          DEFAULT 0
+        )
         """
       )
       cur.execute(
         """
         CREATE TABLE IF NOT EXISTS compras (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          fecha DATE NOT NULL,
-          fecha_hora DATETIME DEFAULT NOW(),
-          total INT NOT NULL DEFAULT 0,
-          notas VARCHAR(200)
-        ) ENGINE=InnoDB
+          id         SERIAL  PRIMARY KEY,
+          fecha      DATE    NOT NULL,
+          fecha_hora TIMESTAMP DEFAULT NOW(),
+          total      INT     NOT NULL DEFAULT 0,
+          notas      VARCHAR(200)
+        )
         """
       )
       cur.execute(
         """
         CREATE TABLE IF NOT EXISTS compras_detalle (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          compra_id INT NOT NULL,
-          nombre_insumo VARCHAR(100) NOT NULL,
-          cantidad DECIMAL(10,2) NOT NULL,
-          unidad VARCHAR(20) NOT NULL,
-          valor_unitario INT NOT NULL,
-          subtotal INT NOT NULL,
+          id             SERIAL        PRIMARY KEY,
+          compra_id      INT           NOT NULL,
+          nombre_insumo  VARCHAR(100)  NOT NULL,
+          cantidad       DECIMAL(10,2) NOT NULL,
+          unidad         VARCHAR(20)   NOT NULL,
+          valor_unitario INT           NOT NULL,
+          subtotal       INT           NOT NULL,
           FOREIGN KEY (compra_id) REFERENCES compras(id)
-        ) ENGINE=InnoDB
-        """
-      )
-      cur.execute(
-        """
-        INSERT IGNORE INTO insumos_catalogo (id, nombre, unidad, precio_ref, activo, orden) VALUES
-          (1,  'Carne de cerdo',     'kg',  0, 1, 1),
-          (2,  'Carne de pollo',     'kg',  0, 1, 2),
-          (3,  'Papas',              'kg',  0, 1, 3),
-          (4,  'Salchichas',         'paq', 0, 1, 4),
-          (5,  'Pan de perro',       'paq', 0, 1, 5),
-          (6,  'Pan de hamburguesa', 'paq', 0, 1, 6),
-          (7,  'Aceite',             'lt',  0, 1, 7),
-          (8,  'Salsas (surtido)',   'und', 0, 1, 8),
-          (9,  'Condimentos',        'und', 0, 1, 9),
-          (10, 'Gaseosas',           'und', 0, 1, 10)
+        )
         """
       )
       cur.execute(
         """
         CREATE TABLE IF NOT EXISTS trabajadores (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          nombre VARCHAR(100) NOT NULL,
-          rol VARCHAR(50) DEFAULT 'Trabajador',
-          tarifa_dia INT NOT NULL DEFAULT 0,
+          id              SERIAL       PRIMARY KEY,
+          nombre          VARCHAR(100) NOT NULL,
+          rol             VARCHAR(50)  DEFAULT 'Trabajador',
+          tarifa_dia      INT          NOT NULL DEFAULT 0,
           recargo_festivo DECIMAL(3,1) DEFAULT 1.0,
-          activo TINYINT DEFAULT 1,
-          orden INT DEFAULT 0,
-          created_at DATETIME DEFAULT NOW()
-        ) ENGINE=InnoDB
+          activo          SMALLINT     DEFAULT 1,
+          orden           INT          DEFAULT 0,
+          created_at      TIMESTAMP    DEFAULT NOW()
+        )
         """
       )
       cur.execute(
         """
         CREATE TABLE IF NOT EXISTS nomina_semana (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          fecha_inicio DATE NOT NULL,
-          fecha_fin DATE NOT NULL,
-          total INT NOT NULL DEFAULT 0,
-          estado ENUM('borrador','pagada') DEFAULT 'borrador',
-          fecha_pago DATETIME,
-          notas VARCHAR(200)
-        ) ENGINE=InnoDB
+          id           SERIAL  PRIMARY KEY,
+          fecha_inicio DATE    NOT NULL,
+          fecha_fin    DATE    NOT NULL,
+          total        INT     NOT NULL DEFAULT 0,
+          estado       VARCHAR(10) DEFAULT 'borrador'
+            CHECK (estado IN ('borrador', 'pagada')),
+          fecha_pago   TIMESTAMP,
+          notas        VARCHAR(200)
+        )
         """
       )
       cur.execute(
         """
         CREATE TABLE IF NOT EXISTS nomina_detalle (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          nomina_id INT NOT NULL,
-          trabajador_id INT NOT NULL,
+          id                SERIAL       PRIMARY KEY,
+          nomina_id         INT          NOT NULL,
+          trabajador_id     INT          NOT NULL,
           nombre_trabajador VARCHAR(100) NOT NULL,
-          rol VARCHAR(50),
-          tarifa_dia INT NOT NULL,
-          recargo_festivo DECIMAL(3,1) DEFAULT 1.0,
-          trabajo_sabado TINYINT DEFAULT 0,
-          trabajo_domingo TINYINT DEFAULT 0,
-          trabajo_lunes TINYINT DEFAULT 0,
-          dias_normales INT DEFAULT 0,
-          dias_festivos INT DEFAULT 0,
-          total_trabajador INT NOT NULL DEFAULT 0,
-          FOREIGN KEY (nomina_id) REFERENCES nomina_semana(id),
+          rol               VARCHAR(50),
+          tarifa_dia        INT          NOT NULL,
+          recargo_festivo   DECIMAL(3,1) DEFAULT 1.0,
+          trabajo_sabado    SMALLINT     DEFAULT 0,
+          trabajo_domingo   SMALLINT     DEFAULT 0,
+          trabajo_lunes     SMALLINT     DEFAULT 0,
+          dias_normales     INT          DEFAULT 0,
+          dias_festivos     INT          DEFAULT 0,
+          total_trabajador  INT          NOT NULL DEFAULT 0,
+          FOREIGN KEY (nomina_id)     REFERENCES nomina_semana(id),
           FOREIGN KEY (trabajador_id) REFERENCES trabajadores(id)
-        ) ENGINE=InnoDB
+        )
         """
       )
-    conn.commit()
-  finally:
-    conn.close()
 
 
 def _prefijo_año_actual() -> str:
@@ -351,7 +320,7 @@ def _prefijo_año_actual() -> str:
   return f"FAC-{datetime.now().year}"
 
 
-def _ultimo_numero_en_ventas(cur: pymysql.cursors.Cursor) -> int:
+def _ultimo_numero_en_ventas(cur: Any) -> int:
   """Mayor número FAC-YYYY-NNNN ya guardado en ventas para el año actual."""
   prefijo = f"{_prefijo_año_actual()}-"
   cur.execute(
@@ -432,9 +401,10 @@ def _seed_productos() -> None:
       for fila in semilla:
         cur.execute(
           """
-          INSERT IGNORE INTO productos
+          INSERT INTO productos
             (producto_id, nombre, precio, categoria, ingredientes, activo, orden, cat_orden)
           VALUES (%s, %s, %s, %s, %s, 1, %s, %s)
+          ON CONFLICT (producto_id) DO NOTHING
           """,
           fila,
         )
@@ -448,7 +418,7 @@ def get_config(clave: str, default: str = "") -> str:
         cur.execute("SELECT valor FROM configuracion WHERE clave = %s", (clave,))
         fila = cur.fetchone()
         return str(fila["valor"]) if fila else default
-  except (ErrorBaseDatos, pymysql.Error):
+  except (ErrorBaseDatos, psycopg2.Error):
     return default
 
 
@@ -460,28 +430,34 @@ def set_config(clave: str, valor: str) -> None:
         """
         INSERT INTO configuracion (clave, valor)
         VALUES (%s, %s)
-        ON DUPLICATE KEY UPDATE valor = %s
+        ON CONFLICT (clave) DO UPDATE SET valor = EXCLUDED.valor
         """,
-        (clave, valor, valor),
+        (clave, valor),
       )
 
 
 def _migraciones() -> None:
-  """Aplica migraciones de esquema que no están en CREATE TABLE (idempotente)."""
+  """Aplica migraciones de esquema idempotentes para bases existentes."""
   _alter = [
-    ("ventas",      "turno_id",         "ALTER TABLE ventas ADD COLUMN turno_id INT DEFAULT NULL"),
-    ("ventas",      "monto_recibido",   "ALTER TABLE ventas ADD COLUMN monto_recibido INT NOT NULL DEFAULT 0"),
-    ("ventas",      "vuelto_dado",      "ALTER TABLE ventas ADD COLUMN vuelto_dado INT NOT NULL DEFAULT 0"),
-    ("ventas",      "anulada",          "ALTER TABLE ventas ADD COLUMN anulada TINYINT(1) NOT NULL DEFAULT 0"),
-    ("ventas",      "motivo_anulacion", "ALTER TABLE ventas ADD COLUMN motivo_anulacion VARCHAR(200) DEFAULT NULL"),
-    ("turnos",      "anulado",          "ALTER TABLE turnos ADD COLUMN anulado TINYINT(1) NOT NULL DEFAULT 0"),
-    ("turnos",      "total_vueltos",    "ALTER TABLE turnos ADD COLUMN total_vueltos INT NOT NULL DEFAULT 0"),
-    ("turnos",      "efectivo_esperado","ALTER TABLE turnos ADD COLUMN efectivo_esperado INT NOT NULL DEFAULT 0"),
+    ("ventas",  "turno_id",         "ALTER TABLE ventas ADD COLUMN turno_id INT DEFAULT NULL"),
+    ("ventas",  "monto_recibido",   "ALTER TABLE ventas ADD COLUMN monto_recibido INT NOT NULL DEFAULT 0"),
+    ("ventas",  "vuelto_dado",      "ALTER TABLE ventas ADD COLUMN vuelto_dado INT NOT NULL DEFAULT 0"),
+    ("ventas",  "anulada",          "ALTER TABLE ventas ADD COLUMN anulada SMALLINT NOT NULL DEFAULT 0"),
+    ("ventas",  "motivo_anulacion", "ALTER TABLE ventas ADD COLUMN motivo_anulacion VARCHAR(200) DEFAULT NULL"),
+    ("turnos",  "anulado",          "ALTER TABLE turnos ADD COLUMN anulado SMALLINT NOT NULL DEFAULT 0"),
+    ("turnos",  "total_vueltos",    "ALTER TABLE turnos ADD COLUMN total_vueltos INT NOT NULL DEFAULT 0"),
+    ("turnos",  "efectivo_esperado","ALTER TABLE turnos ADD COLUMN efectivo_esperado INT NOT NULL DEFAULT 0"),
   ]
   with conexion() as conn:
     with conn.cursor() as cur:
       for tabla, columna, sql in _alter:
-        cur.execute(f"SHOW COLUMNS FROM {tabla} LIKE %s", (columna,))
+        cur.execute(
+          """
+          SELECT column_name FROM information_schema.columns
+          WHERE table_schema = 'public' AND table_name = %s AND column_name = %s
+          """,
+          (tabla, columna),
+        )
         if not cur.fetchone():
           cur.execute(sql)
 
@@ -490,15 +466,15 @@ def inicializar_bd() -> None:
   _crear_base_y_tablas()
   try:
     sincronizar_contador_facturas()
-  except (pymysql.Error, ErrorBaseDatos):
+  except (psycopg2.Error, ErrorBaseDatos):
     pass
   try:
     _seed_productos()
-  except (pymysql.Error, ErrorBaseDatos):
+  except (psycopg2.Error, ErrorBaseDatos):
     pass
   try:
     _migraciones()
-  except (pymysql.Error, ErrorBaseDatos):
+  except (psycopg2.Error, ErrorBaseDatos):
     pass
 
 
@@ -690,9 +666,9 @@ def siguiente_id_factura() -> str:
       cur.execute(
         """
         INSERT INTO contador_facturas (anio, ultimo_numero) VALUES (%s, %s)
-        ON DUPLICATE KEY UPDATE ultimo_numero = %s
+        ON CONFLICT (anio) DO UPDATE SET ultimo_numero = EXCLUDED.ultimo_numero
         """,
-        (anio, numero, numero),
+        (anio, numero),
       )
   return f"{prefijo}-{numero:04d}"
 
@@ -744,7 +720,7 @@ def guardar_factura(factura: Factura) -> None:
         )
 
 
-def _lineas_de_factura(cur: pymysql.cursors.Cursor, id_factura: str) -> list[dict[str, Any]]:
+def _lineas_de_factura(cur: Any, id_factura: str) -> list[dict[str, Any]]:
   cur.execute(
     """
     SELECT producto_id, producto_nombre, cantidad, precio_unitario,
@@ -1028,11 +1004,11 @@ def abrir_turno(cajero: str, efectivo_inicial: int = 0) -> int:
       cur.execute(
         """
         INSERT INTO turnos (cajero, fecha_apertura, efectivo_inicial, estado)
-        VALUES (%s, %s, %s, 'abierto')
+        VALUES (%s, %s, %s, 'abierto') RETURNING id
         """,
         (cajero.strip() or "Cajero", datetime.now(), efectivo_inicial),
       )
-      return conn.insert_id()
+      return cur.fetchone()["id"]
 
 
 def cerrar_turno(turno_id: int) -> dict[str, Any]:
@@ -1150,10 +1126,10 @@ def crear_preparacion(categoria: str, opcion: str, orden: int = 0) -> int:
   with conexion() as conn:
     with conn.cursor() as cur:
       cur.execute(
-        "INSERT INTO preparaciones (categoria, opcion, orden) VALUES (%s, %s, %s)",
+        "INSERT INTO preparaciones (categoria, opcion, orden) VALUES (%s, %s, %s) RETURNING id",
         (categoria.strip(), opcion.strip(), orden),
       )
-      return conn.insert_id()
+      return cur.fetchone()["id"]
 
 
 def desactivar_preparacion(prep_id: int) -> None:
@@ -1174,7 +1150,7 @@ def anular_venta(id_factura: str) -> None:
         "UPDATE ventas SET anulada=1 WHERE id_factura=%s",
         (id_factura,),
       )
-      if conn.affected_rows() == 0:
+      if cur.rowcount == 0:
         raise ErrorBaseDatos(f"Venta {id_factura} no encontrada")
 
 
@@ -1200,7 +1176,7 @@ def anular_turno(turno_id: int) -> None:
         "UPDATE turnos SET anulado=1 WHERE id=%s",
         (turno_id,),
       )
-      if conn.affected_rows() == 0:
+      if cur.rowcount == 0:
         raise ErrorBaseDatos(f"Turno {turno_id} no encontrado")
 
 
@@ -1212,8 +1188,8 @@ def probar_conexion() -> tuple[bool, str]:
       with conn.cursor() as cur:
         cur.execute("SELECT 1 AS ok")
         cur.fetchone()
-    return True, f"Conectado a MySQL — base '{MYSQL_DATABASE}' en {MYSQL_HOST}"
+    return True, f"Conectado a PostgreSQL — {PG_HOST}:{PG_PORT}/{PG_DATABASE}"
   except ErrorBaseDatos as e:
     return False, str(e)
-  except pymysql.Error as e:
-    return False, f"Error MySQL: {e}"
+  except psycopg2.Error as e:
+    return False, f"Error PostgreSQL: {e}"
