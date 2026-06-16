@@ -187,13 +187,15 @@ def _crear_base_y_tablas() -> None:
       cur.execute(
         """
         CREATE TABLE IF NOT EXISTS turnos (
-          id              INT AUTO_INCREMENT PRIMARY KEY,
-          cajero          VARCHAR(100) NOT NULL DEFAULT 'Cajero',
-          fecha_apertura  DATETIME NOT NULL,
-          efectivo_inicial INT NOT NULL DEFAULT 0,
-          fecha_cierre    DATETIME DEFAULT NULL,
-          total_ventas    INT NOT NULL DEFAULT 0,
-          estado          ENUM('abierto','cerrado') NOT NULL DEFAULT 'abierto',
+          id                INT AUTO_INCREMENT PRIMARY KEY,
+          cajero            VARCHAR(100) NOT NULL DEFAULT 'Cajero',
+          fecha_apertura    DATETIME NOT NULL,
+          efectivo_inicial  INT NOT NULL DEFAULT 0,
+          fecha_cierre      DATETIME DEFAULT NULL,
+          total_ventas      INT NOT NULL DEFAULT 0,
+          total_vueltos     INT NOT NULL DEFAULT 0,
+          efectivo_esperado INT NOT NULL DEFAULT 0,
+          estado            ENUM('abierto','cerrado') NOT NULL DEFAULT 'abierto',
           INDEX idx_turnos_estado (estado),
           INDEX idx_turnos_fecha (fecha_apertura)
         ) ENGINE=InnoDB
@@ -473,6 +475,8 @@ def _migraciones() -> None:
     ("ventas",      "anulada",          "ALTER TABLE ventas ADD COLUMN anulada TINYINT(1) NOT NULL DEFAULT 0"),
     ("ventas",      "motivo_anulacion", "ALTER TABLE ventas ADD COLUMN motivo_anulacion VARCHAR(200) DEFAULT NULL"),
     ("turnos",      "anulado",          "ALTER TABLE turnos ADD COLUMN anulado TINYINT(1) NOT NULL DEFAULT 0"),
+    ("turnos",      "total_vueltos",    "ALTER TABLE turnos ADD COLUMN total_vueltos INT NOT NULL DEFAULT 0"),
+    ("turnos",      "efectivo_esperado","ALTER TABLE turnos ADD COLUMN efectivo_esperado INT NOT NULL DEFAULT 0"),
   ]
   with conexion() as conn:
     with conn.cursor() as cur:

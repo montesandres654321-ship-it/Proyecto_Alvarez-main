@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS ventas (
   turno_id         INT          DEFAULT NULL,
   monto_recibido   INT          NOT NULL DEFAULT 0,
   vuelto_dado      INT          NOT NULL DEFAULT 0,
+  anulada          TINYINT(1)   NOT NULL DEFAULT 0,
+  motivo_anulacion VARCHAR(200) DEFAULT NULL,
   INDEX idx_ventas_fecha (fecha_hora),
   INDEX idx_ventas_pago  (metodo_pago),
   INDEX idx_ventas_turno (turno_id)
@@ -88,6 +90,7 @@ CREATE TABLE IF NOT EXISTS turnos (
   total_ventas      INT          NOT NULL DEFAULT 0,
   total_vueltos     INT          NOT NULL DEFAULT 0,
   efectivo_esperado INT          NOT NULL DEFAULT 0,
+  anulado           TINYINT(1)   NOT NULL DEFAULT 0,
   estado            ENUM('abierto','cerrado') NOT NULL DEFAULT 'abierto',
   INDEX idx_turnos_estado (estado),
   INDEX idx_turnos_fecha  (fecha_apertura)
