@@ -1,4 +1,4 @@
-# MySQL / MariaDB (XAMPP)
-pymysql>=1.1.0
+# PostgreSQL (Supabase)
+psycopg2-binary>=2.9.9
 # Excel
 openpyxl>=3.1.0
