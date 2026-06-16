@@ -1,96 +1,126 @@
-"""Backup automático de la base de datos MySQL mediante mysqldump."""
+"""Backup de la base de datos PostgreSQL mediante pg_dump (o JSON como fallback)."""
 
 from __future__ import annotations
 
+import json
+import shutil
 import subprocess
 import threading
 from datetime import datetime
 from pathlib import Path
 from typing import Callable
 
-from config import (
-  BASE_DIR,
-  MYSQL_DATABASE,
-  MYSQL_HOST,
-  MYSQL_PASSWORD,
-  MYSQL_PORT,
-  MYSQL_USER,
-)
+from config import BASE_DIR, DATABASE_URL, PG_DATABASE, PG_HOST, PG_PASSWORD, PG_PORT, PG_USER
 
 BACKUPS_DIR = BASE_DIR / "backups"
 MAX_BACKUPS = 30
 
-# Rutas comunes de mysqldump en instalaciones XAMPP / MySQL nativo en Windows
-_RUTAS_WINDOWS = [
-  r"C:\xampp\mysql\bin\mysqldump.exe",
-  r"C:\xampp64\mysql\bin\mysqldump.exe",
-  r"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysqldump.exe",
-  r"C:\Program Files\MySQL\MySQL Server 5.7\bin\mysqldump.exe",
-  r"C:\wamp64\bin\mysql\mysql8.0.31\bin\mysqldump.exe",
-]
 
-
-def _encontrar_mysqldump() -> str | None:
-  """Devuelve la ruta a mysqldump o None si no se encuentra."""
-  import shutil
-  en_path = shutil.which("mysqldump")
+def _encontrar_pg_dump() -> str | None:
+  """Devuelve la ruta a pg_dump o None si no se encuentra."""
+  en_path = shutil.which("pg_dump")
   if en_path:
     return en_path
-  for ruta in _RUTAS_WINDOWS:
+  rutas_windows = [
+    r"C:\Program Files\PostgreSQL\16\bin\pg_dump.exe",
+    r"C:\Program Files\PostgreSQL\15\bin\pg_dump.exe",
+    r"C:\Program Files\PostgreSQL\14\bin\pg_dump.exe",
+  ]
+  for ruta in rutas_windows:
     if Path(ruta).exists():
       return ruta
   return None
 
 
+def _hacer_backup_json(destino: Path) -> Path:
+  """Exporta las tablas principales a JSON como fallback cuando no hay pg_dump."""
+  import psycopg2
+  import psycopg2.extras
+
+  conn_kwargs: dict = {"cursor_factory": psycopg2.extras.RealDictCursor}
+  if DATABASE_URL:
+    conn_kwargs["dsn"] = DATABASE_URL
+  else:
+    conn_kwargs.update({"host": PG_HOST, "port": PG_PORT, "user": PG_USER,
+                        "password": PG_PASSWORD, "dbname": PG_DATABASE})
+
+  tablas = [
+    "ventas", "lineas_venta", "productos", "configuracion",
+    "turnos", "preparaciones", "insumos_catalogo", "compras",
+    "compras_detalle", "trabajadores", "nomina_semana", "nomina_detalle",
+    "contador_facturas",
+  ]
+  datos: dict = {}
+  with psycopg2.connect(**conn_kwargs) as conn:
+    with conn.cursor() as cur:
+      for tabla in tablas:
+        try:
+          cur.execute(f"SELECT * FROM {tabla}")
+          filas = cur.fetchall()
+          datos[tabla] = [dict(f) for f in filas]
+        except Exception:
+          datos[tabla] = []
+
+  destino.parent.mkdir(parents=True, exist_ok=True)
+  destino.write_text(
+    json.dumps(datos, ensure_ascii=False, indent=2, default=str),
+    encoding="utf-8",
+  )
+  return destino
+
+
 def hacer_backup(destino: Path | None = None) -> Path:
   """
-  Ejecuta mysqldump y escribe el resultado en `destino`.
-  Si destino es None, crea el archivo en BACKUPS_DIR con timestamp.
+  Ejecuta pg_dump y escribe el resultado en `destino`.
+  Si pg_dump no está disponible, exporta las tablas a JSON.
   Devuelve la ruta del archivo generado.
-  Lanza RuntimeError si mysqldump no se encuentra o devuelve error.
   """
-  mysqldump = _encontrar_mysqldump()
-  if not mysqldump:
-    raise RuntimeError(
-      "No se encontró mysqldump.\n"
-      "Verifique que XAMPP esté instalado en C:\\xampp "
-      "o que MySQL esté disponible en el PATH."
-    )
+  BACKUPS_DIR.mkdir(parents=True, exist_ok=True)
+  ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+  pg_dump = _encontrar_pg_dump()
+
+  if pg_dump is None:
+    if destino is None:
+      destino = BACKUPS_DIR / f"backup_{ts}.json"
+    return _hacer_backup_json(destino)
 
   if destino is None:
-    BACKUPS_DIR.mkdir(parents=True, exist_ok=True)
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     destino = BACKUPS_DIR / f"backup_{ts}.sql"
   else:
     destino.parent.mkdir(parents=True, exist_ok=True)
 
-  cmd = [
-    mysqldump,
-    f"--host={MYSQL_HOST}",
-    f"--port={MYSQL_PORT}",
-    f"--user={MYSQL_USER}",
-    f"--password={MYSQL_PASSWORD}",
-    "--single-transaction",   # sin bloqueos en InnoDB
-    "--routines",
-    "--add-drop-table",
-    MYSQL_DATABASE,
-  ]
+  env_cmd: dict = {}
+  if DATABASE_URL:
+    cmd = [pg_dump, "--no-password", "--clean", "--if-exists", DATABASE_URL]
+  else:
+    cmd = [
+      pg_dump,
+      f"--host={PG_HOST}",
+      f"--port={PG_PORT}",
+      f"--username={PG_USER}",
+      "--no-password",
+      "--clean",
+      "--if-exists",
+      PG_DATABASE,
+    ]
+    env_cmd = {"PGPASSWORD": PG_PASSWORD}
+
+  import os
+  env = {**os.environ, **env_cmd}
 
   resultado = subprocess.run(
     cmd,
     stdout=subprocess.PIPE,
     stderr=subprocess.PIPE,
     timeout=120,
+    env=env,
   )
 
-  if resultado.returncode != 0:
-    stderr = resultado.stderr.decode("utf-8", errors="replace")
-    # mysqldump escribe warnings en stderr incluso cuando tiene éxito;
-    # solo falla si el stdout está vacío Y hay un error real
-    if not resultado.stdout.strip():
-      raise RuntimeError(
-        f"mysqldump falló (código {resultado.returncode}):\n{stderr[:300]}"
-      )
+  if resultado.returncode != 0 or not resultado.stdout.strip():
+    # pg_dump falló — caer a JSON
+    json_destino = destino.with_suffix(".json")
+    return _hacer_backup_json(json_destino)
 
   destino.write_bytes(resultado.stdout)
   return destino
@@ -98,10 +128,8 @@ def hacer_backup(destino: Path | None = None) -> Path:
 
 def rotar_backups(directorio: Path = BACKUPS_DIR, maximo: int = MAX_BACKUPS) -> None:
   """Elimina los backups más antiguos si hay más de `maximo` archivos."""
-  archivos = sorted(
-    directorio.glob("backup_*.sql"),
-    key=lambda p: p.stat().st_mtime,
-  )
+  patrones = list(directorio.glob("backup_*.sql")) + list(directorio.glob("backup_*.json"))
+  archivos = sorted(patrones, key=lambda p: p.stat().st_mtime)
   for archivo in archivos[: max(0, len(archivos) - maximo)]:
     try:
       archivo.unlink()
@@ -113,10 +141,7 @@ def backup_automatico_async(
   callback_ok: Callable[[Path], None] | None = None,
   callback_error: Callable[[str], None] | None = None,
 ) -> None:
-  """
-  Lanza el backup en un hilo daemon para no bloquear la GUI.
-  Llama a callback_ok(ruta) o callback_error(mensaje) al terminar.
-  """
+  """Lanza el backup en un hilo daemon para no bloquear la GUI."""
   def _run() -> None:
     try:
       ruta = hacer_backup()

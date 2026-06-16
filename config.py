@@ -17,13 +17,13 @@ PRECIO_GASEOSA_PERSONAL = 2000
 PRECIO_GASEOSA_FAMILIAR = 5000
 PRECIO_GASEOSA_MINI = 1000
 
-# --- MySQL / MariaDB ---
-# Valores por defecto para XAMPP local. En producción se leen de variables de entorno.
-MYSQL_HOST = "127.0.0.1"
-MYSQL_PORT = 3306
-MYSQL_USER = "root"
-MYSQL_PASSWORD = ""
-MYSQL_DATABASE = "alvarez_fastfood"
+# --- PostgreSQL / Supabase ---
+# En producción Supabase inyecta DATABASE_URL. En local se usan variables sueltas.
+PG_HOST     = "127.0.0.1"
+PG_PORT     = 5432
+PG_USER     = "postgres"
+PG_PASSWORD = ""
+PG_DATABASE = "alvarez_fastfood"
 
 # Cargar configuración local opcional (copie db_local.example.py → db_local.py)
 try:
@@ -31,10 +31,11 @@ try:
 except ImportError:
   pass
 
-# Variables de entorno — se admiten los nombres DB_* (Render/Railway) y MYSQL_* (legado).
-# DB_* tiene prioridad cuando ambos están definidos.
-MYSQL_HOST     = os.environ.get("DB_HOST",     os.environ.get("MYSQL_HOST",     MYSQL_HOST))
-MYSQL_PORT     = int(os.environ.get("DB_PORT", os.environ.get("MYSQL_PORT",     str(MYSQL_PORT))))
-MYSQL_USER     = os.environ.get("DB_USER",     os.environ.get("MYSQL_USER",     MYSQL_USER))
-MYSQL_PASSWORD = os.environ.get("DB_PASS",     os.environ.get("MYSQL_PASSWORD", MYSQL_PASSWORD))
-MYSQL_DATABASE = os.environ.get("DB_NAME",     os.environ.get("MYSQL_DATABASE", MYSQL_DATABASE))
+# DATABASE_URL tiene prioridad sobre vars sueltas (Supabase la provee directamente).
+DATABASE_URL = os.environ.get("DATABASE_URL", "")
+
+PG_HOST     = os.environ.get("DB_HOST",  os.environ.get("PG_HOST",     PG_HOST))
+PG_PORT     = int(os.environ.get("DB_PORT", os.environ.get("PG_PORT",  str(PG_PORT))))
+PG_USER     = os.environ.get("DB_USER",  os.environ.get("PG_USER",     PG_USER))
+PG_PASSWORD = os.environ.get("DB_PASS",  os.environ.get("PG_PASSWORD", PG_PASSWORD))
+PG_DATABASE = os.environ.get("DB_NAME",  os.environ.get("PG_DATABASE", PG_DATABASE))
