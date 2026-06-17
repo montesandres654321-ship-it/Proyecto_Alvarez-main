@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import api, { formatCOP } from '../api/client'
 import DatePicker from '../components/DatePicker'
+import { formatMiles, parseMiles } from '../utils/formatMiles'
 import './Nomina.css'
 
 function formatFecha(iso) {
@@ -59,6 +60,8 @@ export default function Nomina() {
   const [historial, setHistorial]         = useState([])
   const [expandido, setExpandido]         = useState(null)
   const [msg, setMsg]                     = useState('')
+  const [tarifasEdit, setTarifasEdit]     = useState({})
+  const [editandoTarifa, setEditandoTarifa] = useState(null)
 
   const sabadoActual = obtenerSabadoActual()
 
@@ -121,13 +124,30 @@ export default function Nomina() {
     }))
   }
 
+  const getTarifa = (t) => tarifasEdit[t.id] !== undefined ? tarifasEdit[t.id] : t.tarifa_dia
+
   const calcularTotalTrabajador = (t) => {
     const a = asistencia[t.id] || { sab: false, dom: false, lun: false }
-    const tarifa = t.tarifa_dia
+    const tarifa = getTarifa(t)
     const recargo = parseFloat(t.recargo_festivo) || 1.0
     const diasFest = lunesEsFestivo && a.lun ? 1 : 0
     const diasNorm = (a.sab ? 1 : 0) + (a.dom ? 1 : 0) + (!lunesEsFestivo && a.lun ? 1 : 0)
     return Math.round(diasNorm * tarifa + diasFest * tarifa * recargo)
+  }
+
+  const guardarTarifa = async (t) => {
+    const nuevo = parseMiles(tarifasEdit[t.id] ?? String(t.tarifa_dia))
+    if (!nuevo || nuevo === t.tarifa_dia) {
+      setEditandoTarifa(null)
+      setTarifasEdit(prev => { const n = { ...prev }; delete n[t.id]; return n })
+      return
+    }
+    try {
+      await api.put(`/nomina/trabajadores/${t.id}`, { tarifa_dia: nuevo })
+      setTrabajadores(prev => prev.map(w => w.id === t.id ? { ...w, tarifa_dia: nuevo } : w))
+    } catch {}
+    setEditandoTarifa(null)
+    setTarifasEdit(prev => { const n = { ...prev }; delete n[t.id]; return n })
   }
 
   const totalNomina = trabajadores.reduce((s, t) => s + calcularTotalTrabajador(t), 0)
@@ -273,6 +293,7 @@ export default function Nomina() {
               <tr>
                 <th>Trabajador</th>
                 <th>Rol</th>
+                <th style={{ textAlign: 'right' }}>Tarifa/día</th>
                 <th style={{ textAlign: 'center' }}>
                   Sáb<br/>
                   <span className="th-fecha-mini">{semana ? formatFecha(semana.fecha_sabado) : ''}</span>
@@ -299,6 +320,26 @@ export default function Nomina() {
                   <tr key={t.id}>
                     <td className="td-nombre">{t.nombre}</td>
                     <td className="td-rol">{t.rol}</td>
+                    <td style={{ textAlign: 'right' }}>
+                      {editandoTarifa === t.id ? (
+                        <input
+                          className="tarifa-input"
+                          autoFocus
+                          value={tarifasEdit[t.id] ?? formatMiles(t.tarifa_dia)}
+                          onChange={e => setTarifasEdit(prev => ({ ...prev, [t.id]: e.target.value }))}
+                          onBlur={() => guardarTarifa(t)}
+                          onKeyDown={e => { if (e.key === 'Enter') guardarTarifa(t); if (e.key === 'Escape') { setEditandoTarifa(null); setTarifasEdit(prev => { const n = { ...prev }; delete n[t.id]; return n }) } }}
+                        />
+                      ) : (
+                        <span
+                          className="tarifa-display"
+                          onClick={() => { setEditandoTarifa(t.id); setTarifasEdit(prev => ({ ...prev, [t.id]: formatMiles(t.tarifa_dia) })) }}
+                          title="Clic para editar"
+                        >
+                          {formatMiles(getTarifa(t))}
+                        </span>
+                      )}
+                    </td>
                     <td style={{ textAlign: 'center' }}>
                       <button
                         className={`asistencia-btn${a.sab ? ' asistencia-presente' : ' asistencia-ausente'}`}
@@ -336,7 +377,7 @@ export default function Nomina() {
             </tbody>
             <tfoot>
               <tr className="nomina-total-row">
-                <td colSpan={5} className="total-label">TOTAL NÓMINA</td>
+                <td colSpan={6} className="total-label">TOTAL NÓMINA</td>
                 <td></td>
                 <td className="total-valor">{formatCOP(totalNomina)}</td>
               </tr>

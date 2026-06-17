@@ -194,6 +194,31 @@
   color: transparent !important;
 }
 
+/* ── Tarifa editable inline ── */
+.tarifa-display {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  border-bottom: 1px dashed #443300;
+  padding-bottom: 1px;
+}
+.tarifa-display:hover { border-color: var(--gold); }
+.tarifa-input {
+  width: 80px;
+  padding: 4px 8px;
+  background: #1a1200;
+  border: 1px solid #443300;
+  border-radius: var(--radius-sm);
+  color: var(--gold);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  outline: none;
+}
+.tarifa-input:focus { border-color: var(--gold); }
+
 /* Fecha pequeña en header columnas */
 .th-fecha-mini {
   font-size: 10px;
