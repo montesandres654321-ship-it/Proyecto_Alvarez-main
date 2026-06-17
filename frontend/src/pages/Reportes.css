@@ -710,6 +710,10 @@
   overflow-x: auto;
   padding-bottom: 4px;
 }
+@media (max-width: 480px) {
+  .mes-barras { height: 80px; }
+  .mes-barra-day { font-size: 8px; }
+}
 .mes-barra-col {
   display: flex;
   flex-direction: column;
