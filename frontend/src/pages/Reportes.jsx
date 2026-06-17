@@ -991,23 +991,27 @@ function TabDashboard() {
         </div>
         {topProductos.length === 0 ? (
           <p className="r-sin-datos">Sin ventas en este período</p>
-        ) : (
-          topProductos.map((p, i) => (
-            <div key={p.nombre} className="top-bar-row">
-              <div className="top-bar-pos">{i + 1}</div>
-              <div className="top-bar-nombre" title={p.nombre}>{p.nombre}</div>
-              <div className="top-bar-track">
-                <div
-                  className="top-bar-fill"
-                  style={{ width: `${p.porcentaje}%`, background: COLORES_BARRA[i] || COLORES_BARRA[9] }}
-                >
-                  {p.unidades} uds
+        ) : (() => {
+          const maxUni = topProductos[0]?.unidades || 1
+          return topProductos.map((p, i) => {
+            const pct = p.porcentaje != null ? p.porcentaje : Math.round((p.unidades / maxUni) * 100)
+            return (
+              <div key={p.nombre} className="top-bar-row">
+                <div className="top-bar-pos">{i + 1}</div>
+                <div className="top-bar-nombre" title={p.nombre}>{p.nombre}</div>
+                <div className="top-bar-track">
+                  <div
+                    className="top-bar-fill"
+                    style={{ width: `${pct}%`, background: COLORES_BARRA[i] || COLORES_BARRA[9] }}
+                  >
+                    {p.unidades} uds
+                  </div>
                 </div>
+                <div className="top-bar-val">{formatCOP(p.total_cop)}</div>
               </div>
-              <div className="top-bar-val">{formatCOP(p.total_cop)}</div>
-            </div>
-          ))
-        )}
+            )
+          })
+        })()}
       </div>
 
       {/* ── Top fines de semana ── */}

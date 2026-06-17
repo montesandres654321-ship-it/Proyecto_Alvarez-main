@@ -206,6 +206,7 @@
 }
 .top-bar-track {
   flex: 1;
+  max-width: 600px;
   background: #1a1a1a;
   border-radius: 4px;
   height: 24px;
