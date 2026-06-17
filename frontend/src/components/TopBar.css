@@ -51,7 +51,16 @@
 
 .topbar-nav {
   display: flex;
+  align-items: center;
   gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  flex-shrink: 1;
+  min-width: 0;
+}
+.topbar-nav::-webkit-scrollbar {
+  display: none;
 }
 .topbar-link {
   padding: 6px 12px;
@@ -102,9 +111,27 @@
   font-variant-numeric: tabular-nums;
 }
 
-@media (max-width: 600px) {
-  .topbar-brand { display: none; }
+@media (max-width: 768px) {
+  .topbar {
+    padding: 0 10px;
+    gap: 8px;
+  }
+  .topbar-nav {
+    flex: 1;
+    gap: 2px;
+  }
+  .topbar-link {
+    white-space: nowrap;
+    font-size: 12px;
+    padding: 4px 8px;
+    flex-shrink: 0;
+  }
   .topbar-sub { display: none; }
-  .ws-label { display: none; }
+  .topbar-name { font-size: 13px; }
   .topbar-clock { display: none; }
+}
+
+@media (max-width: 480px) {
+  .topbar-brand { display: none; }
+  .ws-label { display: none; }
 }
