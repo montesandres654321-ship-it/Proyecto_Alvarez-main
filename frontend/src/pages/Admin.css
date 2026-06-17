@@ -233,6 +233,59 @@
 .admin-table-wrapper { overflow-x: auto; }
 @media (max-width: 768px) {
   .admin-table { min-width: 560px; }
+  .admin-table-wrapper { display: none; }
+  .admin-cards-movil { display: flex; flex-direction: column; gap: 10px; }
+}
+@media (min-width: 769px) {
+  .admin-cards-movil { display: none; }
+}
+
+/* ── Cards móvil ── */
+.admin-card-item {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.admin-card-item.card-inactivo { opacity: 0.5; }
+.admin-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.admin-card-nombre {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  flex: 1;
+  margin-right: 10px;
+  word-break: break-word;
+}
+.admin-card-acciones {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.admin-card-detalles {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.admin-card-categoria {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.admin-card-precio {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
 }
 
 .form-select {

@@ -319,6 +319,33 @@ function AdminContenido() {
             </tbody>
           </table>
           </div>
+
+          {/* Tarjetas móvil — productos */}
+          <div className="admin-cards-movil">
+            {productos.map((p) => (
+              <div key={p.id} className={`admin-card-item${p.activo ? '' : ' card-inactivo'}`}>
+                <div className="admin-card-header">
+                  <span className="admin-card-nombre">{p.nombre}</span>
+                  <div className="admin-card-acciones">
+                    <button className="btn-edit" onClick={() => abrirForm({ ...p })} title="Editar">✏️</button>
+                    <button
+                      className={`toggle-switch ${p.activo ? 'on' : 'off'}`}
+                      onClick={() => toggleActivo(p)}
+                      title={p.activo ? 'Activo' : 'Inactivo'}
+                    >
+                      <span className="toggle-thumb" />
+                    </button>
+                  </div>
+                </div>
+                <div className="admin-card-detalles">
+                  <span className="admin-card-categoria">{p.categoria}</span>
+                  <span className="admin-card-precio">
+                    {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(p.precio)}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -508,6 +535,34 @@ function AdminContenido() {
               </tbody>
             </table>
           </div>
+
+          {/* Tarjetas móvil — insumos */}
+          <div className="admin-cards-movil">
+            {insumos.map(ins => (
+              <div key={ins.id} className="admin-card-item">
+                <div className="admin-card-header">
+                  <span className="admin-card-nombre">{ins.nombre}</span>
+                  <div className="admin-card-acciones">
+                    <button className="btn-edit" title="Editar" onClick={() => setInsumoForm({ ...ins, precio_ref: String(ins.precio_ref) })}>✏️</button>
+                    <button className="btn-edit" title="Eliminar" onClick={async () => { await api.delete(`/insumos/catalogo/${ins.id}`); flash('Insumo desactivado ✓'); cargarInsumos() }}>🗑</button>
+                  </div>
+                </div>
+                <div className="admin-card-detalles">
+                  <span className="admin-card-categoria">{ins.unidad}</span>
+                  <span className="admin-card-precio">
+                    {ins.precio_ref > 0
+                      ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(ins.precio_ref)
+                      : '—'}
+                  </span>
+                </div>
+              </div>
+            ))}
+            {insumos.length === 0 && (
+              <p style={{ color: 'var(--text-muted)', fontSize: 13, textAlign: 'center', padding: '16px 0' }}>
+                Sin insumos en catálogo
+              </p>
+            )}
+          </div>
         </div>
       )}
 
@@ -636,6 +691,32 @@ function AdminContenido() {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Tarjetas móvil — trabajadores */}
+          <div className="admin-cards-movil">
+            {trabajadores.map(t => (
+              <div key={t.id} className="admin-card-item">
+                <div className="admin-card-header">
+                  <span className="admin-card-nombre">{t.nombre}</span>
+                  <div className="admin-card-acciones">
+                    <button className="btn-edit" title="Editar" onClick={() => setTrabajadorForm({ ...t, tarifa_dia: String(t.tarifa_dia) })}>✏️</button>
+                    <button className="btn-edit" title="Eliminar" onClick={async () => { await api.delete(`/nomina/trabajadores/${t.id}`); flash('Trabajador desactivado ✓'); cargarTrabajadores() }}>🗑</button>
+                  </div>
+                </div>
+                <div className="admin-card-detalles">
+                  <span className="admin-card-categoria">{t.rol}</span>
+                  <span className="admin-card-precio">
+                    {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(t.tarifa_dia)}/día
+                  </span>
+                </div>
+              </div>
+            ))}
+            {trabajadores.length === 0 && (
+              <p style={{ color: 'var(--text-muted)', fontSize: 13, textAlign: 'center', padding: '16px 0' }}>
+                Sin trabajadores registrados
+              </p>
+            )}
           </div>
         </div>
       )}
