@@ -82,6 +82,28 @@
 @media (max-width: 768px) {
   .dashboard-cards-mini { grid-template-columns: repeat(2, 1fr); }
 }
+@media (max-width: 480px) {
+  .dashboard-cards-mini {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    width: 100%;
+  }
+  .dashboard-mini-card {
+    padding: 10px 12px;
+    min-width: 0;
+  }
+  .dashboard-mini-val {
+    font-size: 16px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .dashboard-mini-label { font-size: 9px; }
+  .top-bar-row { gap: 6px; }
+  .top-bar-nombre { width: 100px; font-size: 11px; }
+  .top-bar-val { width: 70px; font-size: 10px; }
+  .top-bar-fill { font-size: 10px; }
+}
 .dashboard-mini-card {
   background: var(--bg-surface);
   border: 1px solid var(--border-default);
