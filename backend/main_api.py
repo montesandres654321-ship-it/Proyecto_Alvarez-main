@@ -154,12 +154,12 @@ async def on_startup():
 @app.get("/sw.js", include_in_schema=False)
 @app.get("/workbox-{rest:path}", include_in_schema=False)
 @app.get("/manifest.webmanifest", include_in_schema=False)
-async def static_files(rest: str = ""):
+async def static_files(request: Request, rest: str = ""):
     """Sirve archivos de Service Worker y manifest desde dist/."""
-    for name in [f"sw.js", f"workbox-{rest}", "manifest.webmanifest"]:
-        f = _FRONTEND_DIST / name
-        if f.exists():
-            return FileResponse(str(f))
+    path = request.url.path.lstrip("/")
+    f = _FRONTEND_DIST / path
+    if f.exists():
+        return FileResponse(str(f))
     return JSONResponse({"detail": "Not found"}, status_code=404)
 
 
