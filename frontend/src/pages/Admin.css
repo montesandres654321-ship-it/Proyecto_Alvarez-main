@@ -1,10 +1,12 @@
 .admin-page {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 16px;
   max-width: 960px;
   margin: 0 auto;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .admin-page-header {
@@ -29,7 +31,17 @@
   font-weight: 500;
 }
 
-.admin-tabs { display: flex; gap: 4px; margin-bottom: 20px; }
+.admin-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  flex-wrap: nowrap;
+  padding-bottom: 4px;
+}
+.admin-tabs::-webkit-scrollbar { display: none; }
 .admin-tab {
   padding: 8px 18px;
   background: var(--bg-elevated);
@@ -41,6 +53,8 @@
   cursor: pointer;
   transition: background 120ms, color 120ms, border-color 120ms;
   min-height: 36px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 .admin-tab:hover { color: var(--text-secondary); border-color: var(--border-strong); }
 .admin-tab.active { background: var(--red); border-color: var(--red); color: white; }
