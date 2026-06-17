@@ -19,40 +19,10 @@ function formatSemana(inicio, fin) {
   return `${parseInt(ad)}–${parseInt(fd)} ${meses[parseInt(am) - 1]} ${ay}`
 }
 
-function obtenerSabadoActual() {
-  const today = new Date()
-  const dow = today.getDay() // 0=Sun, 6=Sat
-  const diffSab = dow === 6 ? 0 : dow === 0 ? -1 : -(dow + 1)
-  const sab = new Date(today)
-  sab.setDate(today.getDate() + diffSab)
-  return sab.toISOString().split('T')[0]
-}
-
-function proximoSabado() {
-  const today = new Date()
-  const dow = today.getDay()
-  const diffSab = dow === 6 ? 0 : (6 - dow)
-  const sab = new Date(today)
-  sab.setDate(today.getDate() + diffSab)
-  return sab.toISOString().split('T')[0]
-}
-
-function computarSemana(sabStr) {
-  const sab = new Date(sabStr + 'T12:00:00')
-  const dom = new Date(sab); dom.setDate(sab.getDate() + 1)
-  const lun = new Date(sab); lun.setDate(sab.getDate() + 2)
-  return {
-    fecha_sabado: sabStr,
-    fecha_domingo: dom.toISOString().split('T')[0],
-    fecha_lunes: lun.toISOString().split('T')[0],
-    lunes_es_festivo: false,
-  }
-}
-
 export default function Nomina() {
-  const [semana, setSemana]               = useState(null)
-  const [fechaSabado, setFechaSabado]     = useState(null)
-  const [lunesEsFestivo, setLunesEsFestivo] = useState(false)
+  const hoy = new Date().toISOString().split('T')[0]
+
+  const [diasSeleccionados, setDiasSeleccionados] = useState([])
   const [trabajadores, setTrabajadores]   = useState([])
   const [asistencia, setAsistencia]       = useState({})
   const [guardando, setGuardando]         = useState(false)
@@ -63,29 +33,12 @@ export default function Nomina() {
   const [tarifasEdit, setTarifasEdit]     = useState({})
   const [editandoTarifa, setEditandoTarifa] = useState(null)
 
-  const sabadoActual = obtenerSabadoActual()
-
-  const cargarSemana = (sabStr, trabajadoresList) => {
-    setSemana(computarSemana(sabStr))
-    const lista = trabajadoresList || trabajadores
-    const init = {}
-    lista.forEach(t => { init[t.id] = { sab: false, dom: false, lun: false } })
-    setAsistencia(init)
-    setLunesEsFestivo(false)
-  }
-
   const cargarDatos = async () => {
     try {
-      const [semRes, trabRes] = await Promise.all([
-        api.get('/nomina/semana-actual'),
-        api.get('/nomina/trabajadores'),
-      ])
-      setSemana(semRes.data)
-      setFechaSabado(semRes.data.fecha_sabado)
-      setLunesEsFestivo(semRes.data.lunes_es_festivo)
-      setTrabajadores(trabRes.data)
+      const res = await api.get('/nomina/trabajadores')
+      setTrabajadores(res.data)
       const init = {}
-      trabRes.data.forEach(t => { init[t.id] = { sab: false, dom: false, lun: false } })
+      res.data.forEach(t => { init[t.id] = [] })
       setAsistencia(init)
     } catch {}
   }
@@ -102,37 +55,42 @@ export default function Nomina() {
     cargarHistorial()
   }, [])
 
-  const navegarSemana = (direccion) => {
-    if (!fechaSabado) return
-    const d = new Date(fechaSabado + 'T12:00:00')
-    d.setDate(d.getDate() + (direccion * 7))
-    const nuevo = d.toISOString().split('T')[0]
-    setFechaSabado(nuevo)
-    cargarSemana(nuevo)
+  const toggleDia = (fecha) => {
+    setDiasSeleccionados(prev => {
+      const existe = prev.includes(fecha)
+      const nuevos = existe
+        ? prev.filter(d => d !== fecha)
+        : [...prev, fecha].sort()
+      if (existe) {
+        setAsistencia(a => {
+          const next = {}
+          for (const tid in a) {
+            next[tid] = a[tid].filter(d => d !== fecha)
+          }
+          return next
+        })
+      }
+      return nuevos
+    })
   }
 
-  const irSemanaActual = () => {
-    const sab = obtenerSabadoActual()
-    setFechaSabado(sab)
-    cargarSemana(sab)
-  }
-
-  const toggleAsistencia = (tid, dia) => {
-    setAsistencia(prev => ({
-      ...prev,
-      [tid]: { ...(prev[tid] || {}), [dia]: !(prev[tid]?.[dia]) },
-    }))
+  const toggleAsistencia = (tid, fecha) => {
+    setAsistencia(prev => {
+      const actual = prev[tid] || []
+      const existe = actual.includes(fecha)
+      return {
+        ...prev,
+        [tid]: existe ? actual.filter(d => d !== fecha) : [...actual, fecha].sort(),
+      }
+    })
   }
 
   const getTarifa = (t) => tarifasEdit[t.id] !== undefined ? tarifasEdit[t.id] : t.tarifa_dia
 
   const calcularTotalTrabajador = (t) => {
-    const a = asistencia[t.id] || { sab: false, dom: false, lun: false }
+    const dias = (asistencia[t.id] || []).length
     const tarifa = getTarifa(t)
-    const recargo = parseFloat(t.recargo_festivo) || 1.0
-    const diasFest = lunesEsFestivo && a.lun ? 1 : 0
-    const diasNorm = (a.sab ? 1 : 0) + (a.dom ? 1 : 0) + (!lunesEsFestivo && a.lun ? 1 : 0)
-    return Math.round(diasNorm * tarifa + diasFest * tarifa * recargo)
+    return dias * (typeof tarifa === 'string' ? parseMiles(tarifa) : tarifa)
   }
 
   const guardarTarifa = async (t) => {
@@ -153,18 +111,25 @@ export default function Nomina() {
   const totalNomina = trabajadores.reduce((s, t) => s + calcularTotalTrabajador(t), 0)
 
   const guardarNomina = async (estado) => {
+    if (diasSeleccionados.length === 0) {
+      setMsg('Selecciona al menos un día en el calendario')
+      setTimeout(() => setMsg(''), 3000)
+      return
+    }
+
     const detalle = trabajadores
-      .filter(t => {
-        const a = asistencia[t.id] || {}
-        return a.sab || a.dom || a.lun
-      })
+      .filter(t => (asistencia[t.id] || []).length > 0)
       .map(t => {
-        const a = asistencia[t.id] || {}
+        const tarifa = typeof getTarifa(t) === 'string'
+          ? parseMiles(getTarifa(t))
+          : getTarifa(t)
         return {
           trabajador_id: t.id,
-          trabajo_sabado: !!a.sab,
-          trabajo_domingo: !!a.dom,
-          trabajo_lunes: !!a.lun,
+          dias_trabajados: (asistencia[t.id] || []).join(','),
+          total_override: calcularTotalTrabajador(t),
+          trabajo_sabado: false,
+          trabajo_domingo: false,
+          trabajo_lunes: false,
         }
       })
 
@@ -177,9 +142,9 @@ export default function Nomina() {
     setGuardando(true)
     try {
       await api.post('/nomina/registrar', {
-        fecha_inicio: semana.fecha_sabado,
-        fecha_fin: semana.fecha_lunes,
-        lunes_es_festivo: lunesEsFestivo,
+        fecha_inicio: diasSeleccionados[0],
+        fecha_fin: diasSeleccionados[diasSeleccionados.length - 1],
+        lunes_es_festivo: false,
         detalle,
         estado,
       })
@@ -188,7 +153,7 @@ export default function Nomina() {
         setConfirmacion({
           total: totalNomina,
           hora: new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
-          semana: formatSemana(semana.fecha_sabado, semana.fecha_lunes),
+          semana: formatSemana(diasSeleccionados[0], diasSeleccionados[diasSeleccionados.length - 1]),
         })
         setTimeout(() => setConfirmacion(null), 3000)
       } else {
@@ -209,64 +174,38 @@ export default function Nomina() {
       {/* ── Encabezado ── */}
       <div className="nomina-header">
         <div>
-          <h2>Nómina del fin de semana</h2>
-          {semana && (
-            <p className="nomina-subtitulo">
-              Sáb {formatFecha(semana.fecha_sabado)} · Dom {formatFecha(semana.fecha_domingo)}
-              {' · '}Lun {formatFecha(semana.fecha_lunes)}
-              {lunesEsFestivo && ' 🎉'}
-            </p>
-          )}
+          <h2>Nómina</h2>
+          <p className="nomina-subtitulo">
+            {diasSeleccionados.length === 0
+              ? 'Selecciona los días trabajados en el calendario'
+              : `${diasSeleccionados.length} día${diasSeleccionados.length !== 1 ? 's' : ''} seleccionado${diasSeleccionados.length !== 1 ? 's' : ''}: ${diasSeleccionados.map(formatFecha).join(', ')}`
+            }
+          </p>
         </div>
       </div>
 
-      {/* ── Navegación de semanas ── */}
+      {/* ── Selector de días ── */}
       <div className="nomina-nav-semana">
-        <button
-          className="btn-semana-nav"
-          onClick={() => navegarSemana(-1)}
-        >
-          ‹ Anterior
-        </button>
-
         <DatePicker
-          modo="week"
-          fecha={fechaSabado}
-          onChange={(nuevoSab) => {
-            setFechaSabado(nuevoSab)
-            cargarSemana(nuevoSab)
-          }}
-          maxFecha={proximoSabado()}
+          modo="multi"
+          diasSeleccionados={diasSeleccionados}
+          onToggle={toggleDia}
+          maxFecha={hoy}
+          placeholder="Seleccionar días trabajados"
         />
-
-        <button
-          className="btn-semana-nav"
-          onClick={() => navegarSemana(1)}
-          disabled={!fechaSabado || fechaSabado >= sabadoActual}
-        >
-          Siguiente ›
-        </button>
-
-        <button
-          className="btn-semana-hoy"
-          onClick={irSemanaActual}
-        >
-          Semana actual
-        </button>
-      </div>
-
-      {/* ── Toggle lunes festivo ── */}
-      <div className="festivo-toggle">
-        <span className="toggle-label">
-          ¿El lunes {semana ? formatFecha(semana.fecha_lunes) : ''} es festivo?
-          {lunesEsFestivo && ' — se aplica recargo festivo por trabajador'}
-        </span>
-        <button
-          className={`toggle-switch ${lunesEsFestivo ? 'on' : 'off'}`}
-          onClick={() => setLunesEsFestivo(v => !v)}
-        >
-          <span className="toggle-thumb" />
-        </button>
+        {diasSeleccionados.length > 0 && (
+          <button
+            className="btn-semana-hoy"
+            onClick={() => {
+              setDiasSeleccionados([])
+              const init = {}
+              trabajadores.forEach(t => { init[t.id] = [] })
+              setAsistencia(init)
+            }}
+          >
+            Limpiar días
+          </button>
+        )}
       </div>
 
       {msg && <div className="nomina-msg">{msg}</div>}
@@ -294,27 +233,21 @@ export default function Nomina() {
                 <th>Trabajador</th>
                 <th>Rol</th>
                 <th style={{ textAlign: 'right' }}>Tarifa/día</th>
-                <th style={{ textAlign: 'center' }}>
-                  Sáb<br/>
-                  <span className="th-fecha-mini">{semana ? formatFecha(semana.fecha_sabado) : ''}</span>
-                </th>
-                <th style={{ textAlign: 'center' }}>
-                  Dom<br/>
-                  <span className="th-fecha-mini">{semana ? formatFecha(semana.fecha_domingo) : ''}</span>
-                </th>
-                <th style={{ textAlign: 'center' }}>
-                  Lun {lunesEsFestivo ? '🎉' : ''}<br/>
-                  <span className="th-fecha-mini">{semana ? formatFecha(semana.fecha_lunes) : ''}</span>
-                </th>
+                {diasSeleccionados.map(d => (
+                  <th key={d} style={{ textAlign: 'center', minWidth: 52 }}>
+                    <span className="th-dia-short">{formatFecha(d)}</span>
+                  </th>
+                ))}
+                {diasSeleccionados.length === 0 && (
+                  <th style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>← días</th>
+                )}
                 <th style={{ textAlign: 'center' }}>Días</th>
                 <th style={{ textAlign: 'right' }}>Total</th>
               </tr>
             </thead>
             <tbody>
               {trabajadores.map(t => {
-                const a = asistencia[t.id] || { sab: false, dom: false, lun: false }
-                const diasFest = lunesEsFestivo && a.lun ? 1 : 0
-                const diasNorm = (a.sab ? 1 : 0) + (a.dom ? 1 : 0) + (!lunesEsFestivo && a.lun ? 1 : 0)
+                const diasT = asistencia[t.id] || []
                 const total = calcularTotalTrabajador(t)
                 return (
                   <tr key={t.id}>
@@ -328,48 +261,41 @@ export default function Nomina() {
                           value={tarifasEdit[t.id] ?? formatMiles(t.tarifa_dia)}
                           onChange={e => setTarifasEdit(prev => ({ ...prev, [t.id]: e.target.value }))}
                           onBlur={() => guardarTarifa(t)}
-                          onKeyDown={e => { if (e.key === 'Enter') guardarTarifa(t); if (e.key === 'Escape') { setEditandoTarifa(null); setTarifasEdit(prev => { const n = { ...prev }; delete n[t.id]; return n }) } }}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') guardarTarifa(t)
+                            if (e.key === 'Escape') {
+                              setEditandoTarifa(null)
+                              setTarifasEdit(prev => { const n = { ...prev }; delete n[t.id]; return n })
+                            }
+                          }}
                         />
                       ) : (
                         <span
                           className="tarifa-display"
-                          onClick={() => { setEditandoTarifa(t.id); setTarifasEdit(prev => ({ ...prev, [t.id]: formatMiles(t.tarifa_dia) })) }}
+                          onClick={() => {
+                            setEditandoTarifa(t.id)
+                            setTarifasEdit(prev => ({ ...prev, [t.id]: formatMiles(t.tarifa_dia) }))
+                          }}
                           title="Clic para editar"
                         >
                           {formatMiles(getTarifa(t))}
                         </span>
                       )}
                     </td>
-                    <td style={{ textAlign: 'center' }}>
-                      <button
-                        className={`asistencia-btn${a.sab ? ' asistencia-presente' : ' asistencia-ausente'}`}
-                        onClick={() => toggleAsistencia(t.id, 'sab')}
-                      >
-                        {a.sab ? '✓' : ''}
-                      </button>
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      <button
-                        className={`asistencia-btn${a.dom ? ' asistencia-presente' : ' asistencia-ausente'}`}
-                        onClick={() => toggleAsistencia(t.id, 'dom')}
-                      >
-                        {a.dom ? '✓' : ''}
-                      </button>
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      <button
-                        className={`asistencia-btn${a.lun ? ' asistencia-presente' : ' asistencia-ausente'}`}
-                        onClick={() => toggleAsistencia(t.id, 'lun')}
-                      >
-                        {a.lun ? '✓' : ''}
-                      </button>
-                    </td>
-                    <td className="td-dias">{diasNorm + diasFest}</td>
+                    {diasSeleccionados.map(d => (
+                      <td key={d} style={{ textAlign: 'center' }}>
+                        <button
+                          className={`asistencia-btn${diasT.includes(d) ? ' asistencia-presente' : ' asistencia-ausente'}`}
+                          onClick={() => toggleAsistencia(t.id, d)}
+                        >
+                          {diasT.includes(d) ? '✓' : ''}
+                        </button>
+                      </td>
+                    ))}
+                    {diasSeleccionados.length === 0 && <td></td>}
+                    <td className="td-dias">{diasT.length}</td>
                     <td className="td-total-trabajador">
                       {total > 0 ? formatCOP(total) : '—'}
-                      {diasFest > 0 && (
-                        <span className="recargo-badge" title={`Recargo ${t.recargo_festivo}x`}> ×{t.recargo_festivo}</span>
-                      )}
                     </td>
                   </tr>
                 )
@@ -377,7 +303,7 @@ export default function Nomina() {
             </tbody>
             <tfoot>
               <tr className="nomina-total-row">
-                <td colSpan={6} className="total-label">TOTAL NÓMINA</td>
+                <td colSpan={3 + diasSeleccionados.length + (diasSeleccionados.length === 0 ? 1 : 0)} className="total-label">TOTAL NÓMINA</td>
                 <td></td>
                 <td className="total-valor">{formatCOP(totalNomina)}</td>
               </tr>

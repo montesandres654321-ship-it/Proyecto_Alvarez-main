@@ -219,6 +219,13 @@
 }
 .tarifa-input:focus { border-color: var(--gold); }
 
+/* Header días dinámicos */
+.th-dia-short {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
 /* Fecha pequeña en header columnas */
 .th-fecha-mini {
   font-size: 10px;

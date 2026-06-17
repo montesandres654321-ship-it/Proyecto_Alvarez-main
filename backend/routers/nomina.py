@@ -165,6 +165,8 @@ class DetalleNominaIn(BaseModel):
     trabajo_sabado: bool = False
     trabajo_domingo: bool = False
     trabajo_lunes: bool = False
+    dias_trabajados: Optional[str] = None
+    total_override: Optional[int] = None
 
 
 class NominaIn(BaseModel):
@@ -207,12 +209,17 @@ def registrar_nomina(body: NominaIn):
                 dom = 1 if d.trabajo_domingo else 0
                 lun = 1 if d.trabajo_lunes else 0
 
-                dias_festivos = lun if body.lunes_es_festivo else 0
-                dias_normales = sab + dom + (lun if not body.lunes_es_festivo else 0)
+                if d.total_override is not None:
+                    total_t = d.total_override
+                    dias_normales = len(d.dias_trabajados.split(',')) if d.dias_trabajados else (sab + dom + lun)
+                    dias_festivos = 0
+                else:
+                    dias_festivos = lun if body.lunes_es_festivo else 0
+                    dias_normales = sab + dom + (lun if not body.lunes_es_festivo else 0)
+                    total_normal = dias_normales * tarifa
+                    total_festivo = dias_festivos * tarifa * recargo
+                    total_t = round(total_normal + total_festivo)
 
-                total_normal = dias_normales * tarifa
-                total_festivo = dias_festivos * tarifa * recargo
-                total_t = round(total_normal + total_festivo)
                 total_nomina += total_t
 
                 detalles_calc.append({

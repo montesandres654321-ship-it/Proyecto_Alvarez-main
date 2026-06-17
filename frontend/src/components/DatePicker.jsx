@@ -23,8 +23,10 @@ export default function DatePicker({
   fecha,
   fechaDesde,
   fechaHasta,
+  diasSeleccionados,
   onChange,
   onChangeRango,
+  onToggle,
   maxFecha,
   placeholder,
 }) {
@@ -137,6 +139,8 @@ export default function DatePicker({
 
     if (modo === 'single') {
       if (fecha && dia.fecha === fecha) cls.push('dp-dia-seleccionado')
+    } else if (modo === 'multi') {
+      if (diasSeleccionados?.includes(dia.fecha)) cls.push('dp-dia-multi-seleccionado')
     } else if (modo === 'week') {
       if (fecha) {
         const { sabStr, lunStr } = obtenerSemana(fecha)
@@ -163,6 +167,8 @@ export default function DatePicker({
     if (modo === 'single') {
       onChange?.(dia.fecha)
       setAbierto(false)
+    } else if (modo === 'multi') {
+      onToggle?.(dia.fecha)
     } else if (modo === 'week') {
       const d = new Date(dia.fecha + 'T12:00:00')
       const dow = d.getDay() // 0=Sun, 6=Sat
@@ -189,6 +195,12 @@ export default function DatePicker({
   const renderLabel = () => {
     if (modo === 'single' && fecha) return formatearFecha(fecha)
     if (modo === 'week' && fecha) return `Sem. ${formatearFechaCorta(fecha)}`
+    if (modo === 'multi') {
+      const n = diasSeleccionados?.length || 0
+      return n === 0
+        ? (placeholder || 'Seleccionar días')
+        : `${n} día${n !== 1 ? 's' : ''} seleccionado${n !== 1 ? 's' : ''}`
+    }
     if (modo === 'range' && fechaDesde) {
       return `${formatearFechaCorta(fechaDesde)} – ${formatearFechaCorta(fechaHasta || '...')}`
     }

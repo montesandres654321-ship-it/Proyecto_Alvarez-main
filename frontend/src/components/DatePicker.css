@@ -116,6 +116,14 @@
   font-weight: 600;
 }
 
+/* Modo multi */
+.dp-dia-multi-seleccionado {
+  background: var(--red);
+  color: white;
+  font-weight: 700;
+  border-color: var(--red);
+}
+
 /* Modo week */
 .dp-dia-semana {
   background: #1e0a0a;
