@@ -38,6 +38,13 @@ export default function Insumos() {
   const [comprasHoy, setComprasHoy] = useState([])
   const [expandida, setExpandida] = useState(null)
   const [confirmacion, setConfirmacion] = useState(null)
+  const [esMobil, setEsMobil] = useState(window.innerWidth <= 768)
+
+  useEffect(() => {
+    const handler = () => setEsMobil(window.innerWidth <= 768)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
 
   const cargarCatalogo = async () => {
     try {
@@ -203,134 +210,245 @@ export default function Insumos() {
         </div>
       )}
 
-      <div className="insumos-tabla-wrapper">
-      <table className="insumos-tabla">
-        <colgroup>
-          <col style={{ width: 32 }} />
-          <col />
-          <col style={{ width: 90 }} />
-          <col style={{ width: 80 }} className="col-unidad" />
-          <col style={{ width: 110 }} />
-          <col style={{ width: 110 }} />
-          <col style={{ width: 64 }} />
-        </colgroup>
-        <thead>
-          <tr>
-            <th></th>
-            <th>Insumo</th>
-            <th>Cantidad</th>
-            <th className="th-unidad">Unidad</th>
-            <th>Valor unit.</th>
-            <th style={{ textAlign: 'right' }}>Subtotal</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
+      {esMobil ? (
+        <div className="insumos-cards">
           {filas.map((fila, i) => (
-            <tr key={fila.id ?? `extra-${i}`}>
-              <td style={{ padding: '8px 4px' }}>
-                <button
-                  className={`btn-modo-fila ${fila.modoSimple ? 'modo-simple' : 'modo-detallado'}`}
-                  onClick={() => toggleModoFila(i)}
-                  title={fila.modoSimple ? 'Modo simple: solo total' : 'Modo detallado: cantidad × valor'}
-                >
-                  {fila.modoSimple ? '💰' : '📊'}
-                </button>
-              </td>
-              <td className="insumo-nombre-celda">
-                {fila.editandoNombre ? (
-                  <input
-                    className="nombre-editando"
-                    autoFocus
-                    value={fila.nombre}
-                    onChange={e => actualizarFila(i, 'nombre', e.target.value)}
-                    onBlur={e => actualizarNombre(i, e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && actualizarNombre(i, fila.nombre)}
-                  />
-                ) : fila.esExtra ? (
-                  <input
-                    className="insumo-nombre-input"
-                    value={fila.nombre}
-                    onChange={e => actualizarFila(i, 'nombre', e.target.value)}
-                    placeholder="Nombre del insumo"
-                  />
-                ) : (
-                  <span>{fila.nombre}</span>
-                )}
-              </td>
-              {fila.modoSimple ? (
-                <td colSpan={3}>
-                  <input
-                    className="insumo-num-input insumo-total-directo"
-                    type="number"
-                    min="0"
-                    step="1000"
-                    value={fila.totalDirecto}
-                    onChange={e => actualizarTotalDirecto(i, e.target.value)}
-                    placeholder="$ Total pagado"
-                  />
-                </td>
-              ) : (
-                <>
-                  <td>
+            <div key={fila.id ?? `extra-${i}`} className="insumo-card">
+              <div className="insumo-card-header">
+                <div className="insumo-card-nombre">
+                  {fila.editandoNombre ? (
                     <input
-                      className="insumo-num-input"
-                      type="number"
-                      min="0"
-                      step="0.5"
-                      value={fila.cantidad}
-                      onChange={e => actualizarFila(i, 'cantidad', e.target.value)}
-                      placeholder="0"
+                      className="nombre-editando"
+                      autoFocus
+                      value={fila.nombre}
+                      onChange={e => actualizarFila(i, 'nombre', e.target.value)}
+                      onBlur={e => actualizarNombre(i, e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && actualizarNombre(i, fila.nombre)}
                     />
-                  </td>
-                  <td>
-                    <select
-                      className="insumo-unidad-select"
-                      value={fila.unidad}
-                      onChange={e => actualizarFila(i, 'unidad', e.target.value)}
+                  ) : fila.esExtra ? (
+                    <input
+                      className="insumo-nombre-input"
+                      value={fila.nombre}
+                      onChange={e => actualizarFila(i, 'nombre', e.target.value)}
+                      placeholder="Nombre del insumo"
+                    />
+                  ) : (
+                    <span
+                      className="insumo-card-nombre-texto"
+                      onClick={() => toggleEditar(i)}
                     >
-                      {UNIDADES.map(u => <option key={u}>{u}</option>)}
-                    </select>
-                  </td>
-                  <td>
-                    <input
-                      className="insumo-num-input insumo-precio"
-                      type="number"
-                      min="0"
-                      step="500"
-                      value={fila.valorUnit}
-                      onChange={e => actualizarFila(i, 'valorUnit', e.target.value)}
-                      placeholder="$ 0"
-                    />
-                  </td>
-                </>
-              )}
-              <td className="insumo-subtotal">
-                {fila.subtotal > 0 ? formatCOP(fila.subtotal) : '—'}
-              </td>
-              <td>
-                <div className="fila-actions">
+                      {fila.nombre}
+                    </span>
+                  )}
+                </div>
+                <div className="insumo-card-header-actions">
                   <button
-                    className="btn-editar-fila"
-                    onClick={() => toggleEditar(i)}
-                    title="Editar nombre"
+                    className={`btn-modo-fila-card ${fila.modoSimple ? 'modo-simple' : 'modo-detallado'}`}
+                    onClick={() => toggleModoFila(i)}
+                    title={fila.modoSimple ? 'Modo simple' : 'Modo detallado'}
                   >
-                    {fila.editandoNombre ? '✓' : '✏️'}
+                    {fila.modoSimple ? '💰' : '📊'}
                   </button>
                   <button
                     className="btn-eliminar-fila"
                     onClick={() => eliminarFila(i)}
-                    title="Eliminar fila"
                   >
                     ×
                   </button>
                 </div>
-              </td>
-            </tr>
+              </div>
+              <div className="insumo-card-body">
+                {fila.modoSimple ? (
+                  <div className="insumo-card-campo">
+                    <label>Total pagado</label>
+                    <input
+                      className="insumo-num-input insumo-total-directo"
+                      type="number"
+                      min="0"
+                      step="1000"
+                      value={fila.totalDirecto}
+                      onChange={e => actualizarTotalDirecto(i, e.target.value)}
+                      placeholder="0"
+                    />
+                  </div>
+                ) : (
+                  <div className="insumo-card-campos-row">
+                    <div className="insumo-card-campo">
+                      <label>Cantidad</label>
+                      <input
+                        className="insumo-num-input"
+                        type="number"
+                        min="0"
+                        step="0.5"
+                        value={fila.cantidad}
+                        onChange={e => actualizarFila(i, 'cantidad', e.target.value)}
+                        placeholder="0"
+                      />
+                    </div>
+                    <div className="insumo-card-campo insumo-card-campo-unidad">
+                      <label>Unidad</label>
+                      <select
+                        className="insumo-unidad-select"
+                        value={fila.unidad}
+                        onChange={e => actualizarFila(i, 'unidad', e.target.value)}
+                      >
+                        {UNIDADES.map(u => <option key={u}>{u}</option>)}
+                      </select>
+                    </div>
+                    <div className="insumo-card-campo">
+                      <label>Valor unit.</label>
+                      <input
+                        className="insumo-num-input insumo-precio"
+                        type="number"
+                        min="0"
+                        step="500"
+                        value={fila.valorUnit}
+                        onChange={e => actualizarFila(i, 'valorUnit', e.target.value)}
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="insumo-card-footer">
+                <span className="insumo-card-subtotal-label">Subtotal</span>
+                <span className="insumo-card-subtotal-valor">
+                  {fila.subtotal > 0 ? formatCOP(fila.subtotal) : '—'}
+                </span>
+              </div>
+            </div>
           ))}
-        </tbody>
-      </table>
-      </div>
+        </div>
+      ) : (
+        <div className="insumos-tabla-wrapper">
+        <table className="insumos-tabla">
+          <colgroup>
+            <col style={{ width: 32 }} />
+            <col />
+            <col style={{ width: 90 }} />
+            <col style={{ width: 80 }} className="col-unidad" />
+            <col style={{ width: 110 }} />
+            <col style={{ width: 110 }} />
+            <col style={{ width: 64 }} />
+          </colgroup>
+          <thead>
+            <tr>
+              <th></th>
+              <th>Insumo</th>
+              <th>Cantidad</th>
+              <th className="th-unidad">Unidad</th>
+              <th>Valor unit.</th>
+              <th style={{ textAlign: 'right' }}>Subtotal</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {filas.map((fila, i) => (
+              <tr key={fila.id ?? `extra-${i}`}>
+                <td style={{ padding: '8px 4px' }}>
+                  <button
+                    className={`btn-modo-fila ${fila.modoSimple ? 'modo-simple' : 'modo-detallado'}`}
+                    onClick={() => toggleModoFila(i)}
+                    title={fila.modoSimple ? 'Modo simple: solo total' : 'Modo detallado: cantidad × valor'}
+                  >
+                    {fila.modoSimple ? '💰' : '📊'}
+                  </button>
+                </td>
+                <td className="insumo-nombre-celda">
+                  {fila.editandoNombre ? (
+                    <input
+                      className="nombre-editando"
+                      autoFocus
+                      value={fila.nombre}
+                      onChange={e => actualizarFila(i, 'nombre', e.target.value)}
+                      onBlur={e => actualizarNombre(i, e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && actualizarNombre(i, fila.nombre)}
+                    />
+                  ) : fila.esExtra ? (
+                    <input
+                      className="insumo-nombre-input"
+                      value={fila.nombre}
+                      onChange={e => actualizarFila(i, 'nombre', e.target.value)}
+                      placeholder="Nombre del insumo"
+                    />
+                  ) : (
+                    <span>{fila.nombre}</span>
+                  )}
+                </td>
+                {fila.modoSimple ? (
+                  <td colSpan={3}>
+                    <input
+                      className="insumo-num-input insumo-total-directo"
+                      type="number"
+                      min="0"
+                      step="1000"
+                      value={fila.totalDirecto}
+                      onChange={e => actualizarTotalDirecto(i, e.target.value)}
+                      placeholder="$ Total pagado"
+                    />
+                  </td>
+                ) : (
+                  <>
+                    <td>
+                      <input
+                        className="insumo-num-input"
+                        type="number"
+                        min="0"
+                        step="0.5"
+                        value={fila.cantidad}
+                        onChange={e => actualizarFila(i, 'cantidad', e.target.value)}
+                        placeholder="0"
+                      />
+                    </td>
+                    <td>
+                      <select
+                        className="insumo-unidad-select"
+                        value={fila.unidad}
+                        onChange={e => actualizarFila(i, 'unidad', e.target.value)}
+                      >
+                        {UNIDADES.map(u => <option key={u}>{u}</option>)}
+                      </select>
+                    </td>
+                    <td>
+                      <input
+                        className="insumo-num-input insumo-precio"
+                        type="number"
+                        min="0"
+                        step="500"
+                        value={fila.valorUnit}
+                        onChange={e => actualizarFila(i, 'valorUnit', e.target.value)}
+                        placeholder="$ 0"
+                      />
+                    </td>
+                  </>
+                )}
+                <td className="insumo-subtotal">
+                  {fila.subtotal > 0 ? formatCOP(fila.subtotal) : '—'}
+                </td>
+                <td>
+                  <div className="fila-actions">
+                    <button
+                      className="btn-editar-fila"
+                      onClick={() => toggleEditar(i)}
+                      title="Editar nombre"
+                    >
+                      {fila.editandoNombre ? '✓' : '✏️'}
+                    </button>
+                    <button
+                      className="btn-eliminar-fila"
+                      onClick={() => eliminarFila(i)}
+                      title="Eliminar fila"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        </div>
+      )}
 
       <button className="btn-agregar-extra" onClick={agregarExtra}>
         + Agregar insumo

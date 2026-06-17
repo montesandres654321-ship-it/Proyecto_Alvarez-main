@@ -375,37 +375,120 @@
   text-overflow: ellipsis;
 }
 
-/* Ocultar columna Unidad en mobile */
-@media (max-width: 768px) {
-  .col-unidad,
-  .th-unidad,
-  .insumos-tabla td:nth-child(4) {
-    display: none;
-  }
-  .insumo-nombre-celda { max-width: 120px; }
-  .insumos-total-valor { font-size: 22px; min-width: 120px; }
+/* ── Cards móvil ── */
+.insumos-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.insumo-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.insumo-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 8px;
+  gap: 8px;
+}
+.insumo-card-nombre {
+  flex: 1;
+  min-width: 0;
+}
+.insumo-card-nombre-texto {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+.insumo-card-nombre .insumo-nombre-input {
+  width: 100%;
+}
+.insumo-card-header-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.btn-modo-fila-card {
+  width: 32px; height: 32px;
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 100ms;
+}
+.btn-modo-fila-card.modo-simple {
+  background: #1a1200;
+  border-color: #F0A500;
+}
+.insumo-card-body {
+  padding: 4px 14px 10px;
+}
+.insumo-card-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.insumo-card-campo label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.insumo-card-campos-row {
+  display: grid;
+  grid-template-columns: 1fr 80px 1fr;
+  gap: 8px;
+}
+.insumo-card-campos-row .insumo-num-input,
+.insumo-card-campos-row .insumo-unidad-select {
+  width: 100%;
+  box-sizing: border-box;
+}
+.insumo-card-campo .insumo-total-directo {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 16px;
+}
+.insumo-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--bg-elevated);
+  border-top: 1px solid var(--border-subtle);
+}
+.insumo-card-subtotal-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.insumo-card-subtotal-valor {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
 }
 
-@media (max-width: 480px) {
-  .insumos-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-  .insumos-header h2 { font-size: 16px; }
-  .insumos-tabla { min-width: 400px; }
-  .insumo-num-input {
-    width: 70px;
-    padding: 6px 6px;
-    font-size: 12px;
-  }
+@media (max-width: 768px) {
+  .insumos-total-valor { font-size: 22px; min-width: 120px; }
   .insumos-footer {
     flex-direction: column;
     align-items: stretch;
     gap: 10px;
   }
   .insumos-total-valor {
-    font-size: 22px;
     text-align: center;
     min-width: unset;
   }
@@ -413,4 +496,10 @@
     width: 100%;
     padding: 14px;
   }
+  .insumos-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .insumos-header h2 { font-size: 16px; }
 }
