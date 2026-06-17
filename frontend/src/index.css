@@ -76,6 +76,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overscroll-behavior: none;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 #root { height: 100%; }
@@ -95,7 +97,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 
 input, select, textarea {
   font-family: inherit;
-  font-size: var(--text-md);
+  font-size: max(16px, var(--text-md));
   background: var(--bg-input);
   color: var(--text-primary);
   border: 1px solid var(--border-strong);
@@ -107,6 +109,22 @@ input, select, textarea {
 }
 input:focus, select:focus, textarea:focus {
   border-color: var(--red);
+}
+
+@media (max-width: 480px) {
+  input[type="number"],
+  input[type="text"],
+  input[type="tel"],
+  input[type="password"],
+  select {
+    font-size: 16px;
+  }
+  .reportes-page,
+  .insumos-page,
+  .nomina-page,
+  .admin-page {
+    padding: 12px 10px;
+  }
 }
 
 a { color: var(--red); text-decoration: none; }
