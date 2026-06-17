@@ -267,6 +267,7 @@ export default function Nomina() {
         </div>
       ) : (
         <>
+          <div className="nomina-tabla-wrapper">
           <table className="nomina-tabla">
             <thead>
               <tr>
@@ -335,6 +336,7 @@ export default function Nomina() {
               </tr>
             </tfoot>
           </table>
+          </div>
 
           <div className="nomina-actions">
             <button

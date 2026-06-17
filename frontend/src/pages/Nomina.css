@@ -125,6 +125,10 @@
 }
 
 /* ── Tabla ── */
+.nomina-tabla-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
 .nomina-tabla {
   width: 100%;
   border-collapse: collapse;
@@ -302,6 +306,24 @@
 @media (max-width: 768px) {
   .nomina-tabla th:nth-child(2),
   .nomina-tabla td:nth-child(2) { display: none; }
+  .nomina-tabla { min-width: 480px; }
   .total-valor { font-size: 18px; }
   .btn-pagar-nomina { font-size: 13px; padding: 10px 16px; }
+  .nomina-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .btn-guardar-nomina,
+  .btn-pagar-nomina {
+    width: 100%;
+    padding: 14px;
+  }
+  .nomina-nav-semana {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .btn-semana-nav {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
 }
