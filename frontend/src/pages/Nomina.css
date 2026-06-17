@@ -159,25 +159,29 @@
 
 /* ── Botones asistencia táctiles ── */
 .asistencia-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  border: 2px solid var(--border-strong);
-  background: var(--bg-elevated);
-  color: transparent;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: var(--radius-md) !important;
+  border: 2px solid #333 !important;
+  background: #161616 !important;
+  color: transparent !important;
   font-size: 16px;
   font-weight: 700;
+  line-height: 1;
   cursor: pointer;
   transition: all 150ms ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   margin: 0 auto;
-  padding: 0;
+  padding: 0 !important;
+  box-sizing: border-box;
 }
 .asistencia-btn:hover {
-  border-color: var(--red);
-  background: var(--red-dim);
+  border-color: var(--red) !important;
+  background: var(--red-dim) !important;
 }
 .asistencia-presente {
   background: var(--red) !important;
@@ -185,9 +189,9 @@
   color: white !important;
 }
 .asistencia-ausente {
-  background: var(--bg-elevated);
-  border-color: var(--border-strong);
-  color: transparent;
+  background: #161616 !important;
+  border-color: #333 !important;
+  color: transparent !important;
 }
 
 /* Fecha pequeña en header columnas */
