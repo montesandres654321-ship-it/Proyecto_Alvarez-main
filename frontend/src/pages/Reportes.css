@@ -620,11 +620,15 @@
 .rep-tabs {
   display: flex;
   gap: 4px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
   margin-bottom: 20px;
   border-bottom: 1px solid var(--border-default);
   padding-bottom: 0;
 }
+.rep-tabs::-webkit-scrollbar { display: none; }
 .rep-tab {
   padding: 8px 14px;
   border: none;
@@ -637,10 +641,14 @@
   border-radius: var(--radius-sm) var(--radius-sm) 0 0;
   transition: color 120ms, border-color 120ms;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 .rep-tab:hover { color: var(--text-secondary); }
 .rep-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
 .rep-tab-content { }
+@media (max-width: 480px) {
+  .rep-tab { padding: 6px 12px; font-size: 12px; }
+}
 
 /* ── Fin de semana: cards por día ── */
 .fin-semana-dias {
