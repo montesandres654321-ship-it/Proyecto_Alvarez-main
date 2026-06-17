@@ -328,9 +328,17 @@
 
 /* ── Tabla de ventas ── */
 .tabla-ventas { margin-top: 4px; }
-.ventas-table-wrapper { overflow-x: auto; }
+.ventas-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-default);
+}
 @media (max-width: 768px) {
-  .ventas-table { min-width: 640px; }
+  .ventas-table { min-width: 560px; font-size: 11px; }
+  .ventas-table th,
+  .ventas-table td { padding: 8px 8px; }
+  .col-cajero { display: none; }
   .report-cards { grid-template-columns: repeat(2, 1fr) !important; }
   .turno-card { grid-template-columns: 1fr 1fr; }
 }
