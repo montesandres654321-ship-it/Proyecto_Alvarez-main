@@ -29,6 +29,10 @@
 }
 
 /* TABLA */
+.insumos-tabla-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
 .insumos-tabla {
   width: 100%;
   border-collapse: collapse;
@@ -380,4 +384,33 @@
   }
   .insumo-nombre-celda { max-width: 120px; }
   .insumos-total-valor { font-size: 22px; min-width: 120px; }
+}
+
+@media (max-width: 480px) {
+  .insumos-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .insumos-header h2 { font-size: 16px; }
+  .insumos-tabla { min-width: 400px; }
+  .insumo-num-input {
+    width: 70px;
+    padding: 6px 6px;
+    font-size: 12px;
+  }
+  .insumos-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .insumos-total-valor {
+    font-size: 22px;
+    text-align: center;
+    min-width: unset;
+  }
+  .btn-guardar-compra {
+    width: 100%;
+    padding: 14px;
+  }
 }

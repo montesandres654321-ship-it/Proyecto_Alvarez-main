@@ -203,6 +203,7 @@ export default function Insumos() {
         </div>
       )}
 
+      <div className="insumos-tabla-wrapper">
       <table className="insumos-tabla">
         <colgroup>
           <col style={{ width: 32 }} />
@@ -329,6 +330,7 @@ export default function Insumos() {
           ))}
         </tbody>
       </table>
+      </div>
 
       <button className="btn-agregar-extra" onClick={agregarExtra}>
         + Agregar insumo
