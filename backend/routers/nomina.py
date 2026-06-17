@@ -70,10 +70,10 @@ def crear_trabajador(body: TrabajadorIn):
         with conn.cursor() as cur:
             cur.execute(
                 "INSERT INTO trabajadores (nombre, rol, tarifa_dia, recargo_festivo) "
-                "VALUES (%s, %s, %s, %s)",
+                "VALUES (%s, %s, %s, %s) RETURNING id",
                 (body.nombre.strip(), body.rol.strip(), body.tarifa_dia, body.recargo_festivo),
             )
-            new_id = conn.insert_id()
+            new_id = cur.fetchone()['id']
             cur.execute(
                 "SELECT id, nombre, rol, tarifa_dia, recargo_festivo, activo, orden "
                 "FROM trabajadores WHERE id = %s",
@@ -246,11 +246,11 @@ def registrar_nomina(body: NominaIn):
             else:
                 cur.execute(
                     "INSERT INTO nomina_semana (fecha_inicio, fecha_fin, total, estado, notas) "
-                    "VALUES (%s, %s, %s, %s, %s)",
+                    "VALUES (%s, %s, %s, %s, %s) RETURNING id",
                     (body.fecha_inicio, body.fecha_fin, total_nomina,
                      body.estado, body.notas or None),
                 )
-                nomina_id = conn.insert_id()
+                nomina_id = cur.fetchone()['id']
 
             for d in detalles_calc:
                 cur.execute(
@@ -285,7 +285,7 @@ def pagar_nomina(nomina_id: int):
                 "UPDATE nomina_semana SET estado='pagada', fecha_pago=%s WHERE id=%s",
                 (ahora, nomina_id),
             )
-            if conn.affected_rows() == 0:
+            if cur.rowcount == 0:
                 raise HTTPException(status_code=404, detail="Nómina no encontrada")
     return {"ok": True, "fecha_pago": ahora.isoformat()}
 

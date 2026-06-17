@@ -44,11 +44,11 @@ def crear_insumo(body: InsumoIn):
             cur.execute(
                 """
                 INSERT INTO insumos_catalogo (nombre, unidad, precio_ref)
-                VALUES (%s, %s, %s)
+                VALUES (%s, %s, %s) RETURNING id
                 """,
                 (body.nombre.strip(), body.unidad, body.precio_ref),
             )
-            new_id = conn.insert_id()
+            new_id = cur.fetchone()['id']
             cur.execute(
                 "SELECT id, nombre, unidad, precio_ref, activo, orden FROM insumos_catalogo WHERE id = %s",
                 (new_id,),
@@ -119,10 +119,10 @@ def registrar_compra(body: CompraIn):
     with persistencia.conexion() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "INSERT INTO compras (fecha, total, notas) VALUES (%s, %s, %s)",
+                "INSERT INTO compras (fecha, total, notas) VALUES (%s, %s, %s) RETURNING id",
                 (body.fecha, total, body.notas or None),
             )
-            compra_id = conn.insert_id()
+            compra_id = cur.fetchone()['id']
             for d in body.detalle:
                 cur.execute(
                     """
