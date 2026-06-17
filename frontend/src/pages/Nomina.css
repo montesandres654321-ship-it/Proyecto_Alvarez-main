@@ -156,6 +156,48 @@
   accent-color: var(--red);
   cursor: pointer;
 }
+
+/* ── Botones asistencia táctiles ── */
+.asistencia-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--border-strong);
+  background: var(--bg-elevated);
+  color: transparent;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 150ms ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  padding: 0;
+}
+.asistencia-btn:hover {
+  border-color: var(--red);
+  background: var(--red-dim);
+}
+.asistencia-presente {
+  background: var(--red) !important;
+  border-color: var(--red) !important;
+  color: white !important;
+}
+.asistencia-ausente {
+  background: var(--bg-elevated);
+  border-color: var(--border-strong);
+  color: transparent;
+}
+
+/* Fecha pequeña en header columnas */
+.th-fecha-mini {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}
 .td-nombre { color: var(--text-primary); font-weight: 500; }
 .td-rol { color: var(--text-muted); font-size: 12px; }
 .td-dias {
@@ -306,9 +348,9 @@
 @media (max-width: 768px) {
   .nomina-tabla th:nth-child(2),
   .nomina-tabla td:nth-child(2) { display: none; }
-  .nomina-tabla { min-width: 480px; }
+  .nomina-tabla { min-width: 420px; }
   .total-valor { font-size: 18px; }
-  .btn-pagar-nomina { font-size: 13px; padding: 10px 16px; }
+  .nomina-total-row .total-valor { font-size: 20px; }
   .nomina-actions {
     flex-direction: column;
     gap: 8px;
@@ -317,6 +359,7 @@
   .btn-pagar-nomina {
     width: 100%;
     padding: 14px;
+    font-size: 14px;
   }
   .nomina-nav-semana {
     flex-wrap: wrap;
@@ -325,5 +368,10 @@
   .btn-semana-nav {
     font-size: 12px;
     padding: 6px 10px;
+  }
+  .asistencia-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
   }
 }

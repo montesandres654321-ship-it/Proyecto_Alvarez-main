@@ -273,11 +273,17 @@ export default function Nomina() {
               <tr>
                 <th>Trabajador</th>
                 <th>Rol</th>
-                <th>Sáb {semana ? formatFecha(semana.fecha_sabado) : ''}</th>
-                <th>Dom {semana ? formatFecha(semana.fecha_domingo) : ''}</th>
-                <th>
-                  Lun {semana ? formatFecha(semana.fecha_lunes) : ''}
-                  {lunesEsFestivo ? ' 🎉' : ''}
+                <th style={{ textAlign: 'center' }}>
+                  Sáb<br/>
+                  <span className="th-fecha-mini">{semana ? formatFecha(semana.fecha_sabado) : ''}</span>
+                </th>
+                <th style={{ textAlign: 'center' }}>
+                  Dom<br/>
+                  <span className="th-fecha-mini">{semana ? formatFecha(semana.fecha_domingo) : ''}</span>
+                </th>
+                <th style={{ textAlign: 'center' }}>
+                  Lun {lunesEsFestivo ? '🎉' : ''}<br/>
+                  <span className="th-fecha-mini">{semana ? formatFecha(semana.fecha_lunes) : ''}</span>
                 </th>
                 <th style={{ textAlign: 'center' }}>Días</th>
                 <th style={{ textAlign: 'right' }}>Total</th>
@@ -294,28 +300,28 @@ export default function Nomina() {
                     <td className="td-nombre">{t.nombre}</td>
                     <td className="td-rol">{t.rol}</td>
                     <td style={{ textAlign: 'center' }}>
-                      <input
-                        type="checkbox"
-                        className="asistencia-check"
-                        checked={!!a.sab}
-                        onChange={() => toggleAsistencia(t.id, 'sab')}
-                      />
+                      <button
+                        className={`asistencia-btn${a.sab ? ' asistencia-presente' : ' asistencia-ausente'}`}
+                        onClick={() => toggleAsistencia(t.id, 'sab')}
+                      >
+                        {a.sab ? '✓' : ''}
+                      </button>
                     </td>
                     <td style={{ textAlign: 'center' }}>
-                      <input
-                        type="checkbox"
-                        className="asistencia-check"
-                        checked={!!a.dom}
-                        onChange={() => toggleAsistencia(t.id, 'dom')}
-                      />
+                      <button
+                        className={`asistencia-btn${a.dom ? ' asistencia-presente' : ' asistencia-ausente'}`}
+                        onClick={() => toggleAsistencia(t.id, 'dom')}
+                      >
+                        {a.dom ? '✓' : ''}
+                      </button>
                     </td>
                     <td style={{ textAlign: 'center' }}>
-                      <input
-                        type="checkbox"
-                        className="asistencia-check"
-                        checked={!!a.lun}
-                        onChange={() => toggleAsistencia(t.id, 'lun')}
-                      />
+                      <button
+                        className={`asistencia-btn${a.lun ? ' asistencia-presente' : ' asistencia-ausente'}`}
+                        onClick={() => toggleAsistencia(t.id, 'lun')}
+                      >
+                        {a.lun ? '✓' : ''}
+                      </button>
                     </td>
                     <td className="td-dias">{diasNorm + diasFest}</td>
                     <td className="td-total-trabajador">
