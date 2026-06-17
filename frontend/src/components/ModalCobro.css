@@ -16,6 +16,8 @@
   width: 100%;
   max-width: 420px;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-header {
@@ -237,6 +239,32 @@
 }
 .btn-confirmar:hover:not(:disabled) { background: var(--red-hover); }
 .btn-confirmar:disabled { background: #2a1010; color: #663333; cursor: not-allowed; }
+
+/* ── Responsive móvil ── */
+@media (max-width: 480px) {
+  .modal-overlay {
+    align-items: flex-start;
+    padding: 8px;
+    padding-top: env(safe-area-inset-top, 8px);
+  }
+  .modal-box {
+    max-height: calc(100dvh - 16px);
+    width: 100%;
+    border-radius: var(--radius-lg);
+  }
+  .modal-body {
+    overflow-y: auto;
+    flex: 1;
+    -webkit-overflow-scrolling: touch;
+  }
+  .modal-footer {
+    flex-shrink: 0;
+    position: sticky;
+    bottom: 0;
+    background: #141414;
+    border-top: 1px solid var(--border-subtle);
+  }
+}
 
 /* Vuelto table */
 .vuelto-table { display: flex; flex-direction: column; gap: 4px; }
