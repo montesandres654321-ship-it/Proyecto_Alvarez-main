@@ -313,8 +313,36 @@
   font-size: var(--text-base);
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .form-grid { grid-template-columns: 1fr; }
+  .form-acciones {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .btn-form-cancel,
+  .btn-form-save {
+    width: 100%;
+    padding: 12px;
+  }
+  .btn-nuevo-producto { width: 100%; }
+  /* Configuración: label + input + botón en columna */
+  .config-input-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .config-input-row input {
+    width: 100%;
+    font-size: 16px;
+  }
+  .btn-config-save {
+    width: 100%;
+    padding: 12px;
+  }
+  /* Preparaciones: input + botón en columna */
+  .prep-add-row {
+    flex-direction: column;
+  }
+  .prep-cat-selector { max-width: 100%; }
 }
 
 /* ── Preparaciones ───────────────────────────────── */
