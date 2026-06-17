@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico'],
+      includeAssets: ['favicon-32x32.png', 'favicon-16x16.png', 'apple-touch-icon.png'],
       manifest: {
         name: 'Alvarez POS',
         short_name: 'AlvarezPOS',
@@ -21,6 +21,7 @@ export default defineConfig({
         icons: [
           { src: '/pwa-192.png', sizes: '192x192', type: 'image/png' },
           { src: '/pwa-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+          { src: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
         ],
       },
       workbox: {
