@@ -325,6 +325,16 @@
     padding: 12px;
   }
   .btn-nuevo-producto { width: 100%; }
+  /* Inputs full-width en formularios */
+  .form-producto,
+  .form-producto input,
+  .form-producto select,
+  .form-producto textarea {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  .form-select { font-size: 16px; }
+  .form-input { font-size: 16px; }
   /* Configuración: label + input + botón en columna */
   .config-input-row {
     flex-direction: column;
@@ -343,6 +353,7 @@
     flex-direction: column;
   }
   .prep-cat-selector { max-width: 100%; }
+  .admin-page-header { flex-direction: column; align-items: flex-start; gap: 8px; }
 }
 
 /* ── Preparaciones ───────────────────────────────── */
