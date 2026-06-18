@@ -3,7 +3,9 @@
 import backend  # noqa: F401
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from typing import Optional
 from persistencia import conexion, ErrorBaseDatos
 
 router = APIRouter(prefix="/creditos", tags=["creditos"])
@@ -13,60 +15,82 @@ class CreditoIn(BaseModel):
     id_factura: str = ""
     nombre_cliente: str
     total_deuda: int
-    cajero: str = ""
+    cajero: Optional[str] = ""
 
 
 class PagoIn(BaseModel):
     monto: int
-    metodo_pago: str = "Efectivo"
-    cajero: str = ""
+    metodo_pago: Optional[str] = "Efectivo"
+    cajero: Optional[str] = ""
 
 
-# ── GET /creditos — pendientes (público) ──────────────────────────────────────
-@router.get("")
-@router.get("/", include_in_schema=False)
+def _rows_to_list(rows) -> list:
+    """Convierte filas de psycopg2 (RealDictRow) a lista de dicts JSON-seguros."""
+    if not rows:
+        return []
+    result = []
+    for row in rows:
+        d = {}
+        for k, v in row.items():
+            if hasattr(v, 'isoformat'):
+                d[k] = v.isoformat()
+            else:
+                d[k] = v
+        result.append(d)
+    return result
+
+
+# ── GET /creditos  (sin y con slash) ─────────────────────────────────────────
+@router.get("", response_class=JSONResponse)
+@router.get("/", response_class=JSONResponse, include_in_schema=False)
 def listar_pendientes():
     try:
         with conexion() as conn:
             with conn.cursor() as cur:
                 cur.execute(
                     """
-                    SELECT id, id_factura, nombre_cliente, total_deuda,
-                           total_pagado, estado, fecha_credito, cajero,
-                           (total_deuda - total_pagado) AS saldo
+                    SELECT id, id_factura, nombre_cliente,
+                           total_deuda, total_pagado,
+                           (total_deuda - total_pagado) AS saldo,
+                           estado, fecha_credito, cajero
                     FROM creditos
                     WHERE estado = 'pendiente'
                     ORDER BY fecha_credito DESC
                     """
                 )
-                return cur.fetchall() or []
+                return _rows_to_list(cur.fetchall())
     except ErrorBaseDatos as e:
         raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error inesperado: {e}")
 
 
-# ── GET /creditos/historial — créditos pagados ───────────────────────────────
-@router.get("/historial")
+# ── GET /creditos/historial ───────────────────────────────────────────────────
+@router.get("/historial", response_class=JSONResponse)
 def listar_pagados():
     try:
         with conexion() as conn:
             with conn.cursor() as cur:
                 cur.execute(
                     """
-                    SELECT id, id_factura, nombre_cliente, total_deuda,
-                           total_pagado, estado, fecha_credito, fecha_pago, cajero
+                    SELECT id, id_factura, nombre_cliente,
+                           total_deuda, total_pagado,
+                           (total_deuda - total_pagado) AS saldo,
+                           estado, fecha_credito, fecha_pago, cajero
                     FROM creditos
-                    WHERE estado = 'pagado'
-                    ORDER BY fecha_pago DESC
-                    LIMIT 100
+                    ORDER BY fecha_credito DESC
+                    LIMIT 200
                     """
                 )
-                return cur.fetchall() or []
+                return _rows_to_list(cur.fetchall())
     except ErrorBaseDatos as e:
         raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error inesperado: {e}")
 
 
-# ── GET /creditos/clientes — autocompletado ───────────────────────────────────
-@router.get("/clientes")
+# ── GET /creditos/clientes ────────────────────────────────────────────────────
+@router.get("/clientes", response_class=JSONResponse)
 def listar_clientes():
     try:
         with conexion() as conn:
@@ -78,10 +102,12 @@ def listar_clientes():
                 return [r["nombre_cliente"] for r in rows]
     except ErrorBaseDatos as e:
         raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error inesperado: {e}")
 
 
-# ── GET /creditos/cliente/{nombre} — deuda del cliente ────────────────────────
-@router.get("/cliente/{nombre}")
+# ── GET /creditos/cliente/{nombre} ────────────────────────────────────────────
+@router.get("/cliente/{nombre}", response_class=JSONResponse)
 def creditos_por_cliente(nombre: str):
     try:
         with conexion() as conn:
@@ -97,18 +123,21 @@ def creditos_por_cliente(nombre: str):
                     """,
                     (f"%{nombre}%",),
                 )
-                return cur.fetchall() or []
+                return _rows_to_list(cur.fetchall())
     except ErrorBaseDatos as e:
         raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error inesperado: {e}")
 
 
-# ── POST /creditos — crear crédito ────────────────────────────────────────────
-@router.post("/")
+# ── POST /creditos  (sin y con slash) ────────────────────────────────────────
+@router.post("", response_class=JSONResponse)
+@router.post("/", response_class=JSONResponse, include_in_schema=False)
 def crear_credito(body: CreditoIn):
-    if body.total_deuda <= 0:
-        raise HTTPException(status_code=400, detail="total_deuda debe ser mayor a 0")
     if not body.nombre_cliente.strip():
         raise HTTPException(status_code=400, detail="nombre_cliente es requerido")
+    if body.total_deuda <= 0:
+        raise HTTPException(status_code=400, detail="total_deuda debe ser mayor a 0")
     try:
         with conexion() as conn:
             with conn.cursor() as cur:
@@ -119,16 +148,18 @@ def crear_credito(body: CreditoIn):
                     RETURNING id
                     """,
                     (body.id_factura or None, body.nombre_cliente.strip(),
-                     body.total_deuda, body.cajero),
+                     body.total_deuda, body.cajero or ""),
                 )
                 row = cur.fetchone()
                 return {"id": row["id"], "ok": True}
     except ErrorBaseDatos as e:
         raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al crear crédito: {e}")
 
 
-# ── POST /creditos/{id}/pagar — registrar pago ───────────────────────────────
-@router.post("/{credito_id}/pagar")
+# ── POST /creditos/{id}/pagar ─────────────────────────────────────────────────
+@router.post("/{credito_id}/pagar", response_class=JSONResponse)
 def registrar_pago(credito_id: int, body: PagoIn):
     if body.monto <= 0:
         raise HTTPException(status_code=400, detail="monto debe ser mayor a 0")
@@ -154,7 +185,7 @@ def registrar_pago(credito_id: int, body: PagoIn):
                     UPDATE creditos
                     SET total_pagado = %s,
                         estado = %s,
-                        fecha_pago = CASE WHEN %s = 'pagado' THEN NOW() ELSE NULL END
+                        fecha_pago = CASE WHEN %s = 'pagado' THEN NOW() ELSE fecha_pago END
                     WHERE id = %s
                     """,
                     (nuevo_pagado, nuevo_estado, nuevo_estado, credito_id),
@@ -164,7 +195,7 @@ def registrar_pago(credito_id: int, body: PagoIn):
                     INSERT INTO credito_pagos (credito_id, monto, metodo_pago, cajero)
                     VALUES (%s, %s, %s, %s)
                     """,
-                    (credito_id, body.monto, body.metodo_pago, body.cajero),
+                    (credito_id, body.monto, body.metodo_pago or "Efectivo", body.cajero or ""),
                 )
                 return {
                     "ok": True,
@@ -176,3 +207,5 @@ def registrar_pago(credito_id: int, body: PagoIn):
         raise
     except ErrorBaseDatos as e:
         raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al registrar pago: {e}")

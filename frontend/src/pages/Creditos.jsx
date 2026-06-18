@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import api, { formatCOP } from '../api/client'
+import { formatCOP } from '../api/client'
 import ModalPagoCredito from '../components/ModalPagoCredito'
 import './Creditos.css'
 
@@ -10,34 +10,71 @@ function formatFechaCorta(iso) {
   return `${d.getDate()} ${meses[d.getMonth()]}`
 }
 
+function toArray(data) {
+  if (Array.isArray(data)) return data
+  if (data && typeof data === 'object') {
+    return data.creditos || data.data || data.items || data.results || []
+  }
+  return []
+}
+
 export default function Creditos() {
   const [tab, setTab]                   = useState('pendientes')
   const [creditos, setCreditos]         = useState([])
   const [pagados, setPagados]           = useState([])
   const [cargando, setCargando]         = useState(true)
+  const [errorMsg, setErrorMsg]         = useState('')
   const [modalPago, setModalPago]       = useState(null)
   const [totalPendiente, setTotalPendiente] = useState(0)
 
-  const toArray = (data) =>
-    Array.isArray(data) ? data : (data?.creditos ?? data?.data ?? data?.items ?? [])
-
   const cargarPendientes = async () => {
     setCargando(true)
+    setErrorMsg('')
     try {
-      const res = await api.get('/creditos')
-      const lista = toArray(res.data)
+      const res = await fetch('/creditos')
+      if (!res.ok) {
+        const txt = await res.text()
+        console.error('[Creditos] GET /creditos error', res.status, txt)
+        setErrorMsg(`Error del servidor (${res.status})`)
+        setCreditos([])
+        setCargando(false)
+        return
+      }
+      const contentType = res.headers.get('content-type') || ''
+      if (!contentType.includes('application/json')) {
+        const txt = await res.text()
+        console.error('[Creditos] Respuesta no es JSON:', txt.slice(0, 200))
+        setErrorMsg('El servidor devolvió HTML en lugar de datos. Verifica el deploy.')
+        setCreditos([])
+        setCargando(false)
+        return
+      }
+      const data = await res.json()
+      console.log('[Creditos] datos recibidos:', data)
+      const lista = toArray(data)
       setCreditos(lista)
-      const total = lista.reduce((s, c) => s + (c.total_deuda - c.total_pagado), 0)
+      const total = lista.reduce((s, c) => s + ((c.saldo ?? (c.total_deuda - c.total_pagado)) || 0), 0)
       setTotalPendiente(total)
-    } catch {}
+    } catch (e) {
+      console.error('[Creditos] fetch error:', e)
+      setErrorMsg('No se pudo conectar al servidor')
+      setCreditos([])
+    }
     setCargando(false)
   }
 
   const cargarPagados = async () => {
     try {
-      const res = await api.get('/creditos/historial')
-      setPagados(toArray(res.data))
-    } catch {}
+      const res = await fetch('/creditos/historial')
+      if (!res.ok) return
+      const contentType = res.headers.get('content-type') || ''
+      if (!contentType.includes('application/json')) return
+      const data = await res.json()
+      setPagados(toArray(data))
+    } catch (e) {
+      console.error('[Creditos] historial error:', e)
+      setPagados([])
+    }
   }
 
   useEffect(() => {
@@ -83,6 +120,17 @@ export default function Creditos() {
             <div className="creditos-vacio">
               <div style={{ color: 'var(--text-muted)' }}>Cargando...</div>
             </div>
+          ) : errorMsg ? (
+            <div className="creditos-vacio">
+              <div style={{ fontSize: '32px' }}>⚠️</div>
+              <div style={{ color: '#f87171', fontSize: '14px', textAlign: 'center' }}>{errorMsg}</div>
+              <button
+                onClick={cargarPendientes}
+                style={{ marginTop: 8, padding: '8px 16px', background: 'var(--red)', border: 'none', borderRadius: 8, color: 'white', cursor: 'pointer', fontSize: 13 }}
+              >
+                Reintentar
+              </button>
+            </div>
           ) : creditos.length === 0 ? (
             <div className="creditos-vacio">
               <div style={{ fontSize: '40px' }}>✅</div>
@@ -92,8 +140,8 @@ export default function Creditos() {
               </div>
             </div>
           ) : (
-            (creditos || []).map(c => {
-              const saldo = c.total_deuda - c.total_pagado
+            creditos.map(c => {
+              const saldo = c.saldo ?? (c.total_deuda - c.total_pagado)
               return (
                 <div key={c.id} className="credito-card-full">
                   <div className="credito-card-top">
@@ -141,7 +189,7 @@ export default function Creditos() {
               <div style={{ color: 'var(--text-muted)' }}>No hay créditos pagados aún</div>
             </div>
           ) : (
-            (pagados || []).map(c => (
+            pagados.map(c => (
               <div key={c.id} className="credito-card-full pagado">
                 <div className="credito-card-top">
                   <div>
