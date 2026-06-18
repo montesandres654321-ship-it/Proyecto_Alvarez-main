@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import PinGuard from '../components/PinGuard'
 import api from '../api/client'
+import { formatMiles, parseMiles } from '../utils/formatMiles'
 import './Admin.css'
 
 function AdminContenido() {
@@ -72,7 +73,8 @@ function AdminContenido() {
   const flash = (m) => { setMsg(m); setTimeout(() => setMsg(''), 3000) }
 
   const abrirForm = (datos) => {
-    setForm(datos)
+    const precio = datos.precio ? formatMiles(String(datos.precio).replace(/\D/g, '')) : ''
+    setForm({ ...datos, precio })
     setMostrarNuevaCat(false)
     setNuevaCat('')
     setErrors({})
@@ -88,7 +90,7 @@ function AdminContenido() {
     const e = {}
     if (!form.nombre?.trim() || form.nombre.trim().length < 2)
       e.nombre = 'Nombre requerido (mínimo 2 caracteres)'
-    if (!form.precio || parseInt(form.precio) <= 0)
+    if (!form.precio || parseMiles(form.precio) <= 0)
       e.precio = 'Precio inválido'
     if (!form.categoria)
       e.categoria = 'Selecciona una categoría'
@@ -99,16 +101,17 @@ function AdminContenido() {
   const guardarProducto = async () => {
     if (!validar()) return
     setSaving(true)
+    const precioInt = parseMiles(form.precio)
     try {
       if (form.id) {
         await api.put(`/productos/${form.id}`, {
-          nombre: form.nombre, precio: parseInt(form.precio),
+          nombre: form.nombre, precio: precioInt,
           categoria: form.categoria, ingredientes: form.ingredientes ?? '',
         })
         flash('Producto actualizado ✓')
       } else {
         await api.post('/productos/', {
-          nombre: form.nombre, precio: parseInt(form.precio),
+          nombre: form.nombre, precio: precioInt,
           categoria: form.categoria, ingredientes: form.ingredientes ?? '',
         })
         flash('Producto creado ✓')
@@ -217,11 +220,13 @@ function AdminContenido() {
                 <label className="form-label">
                   Precio (COP)
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     className={errors.precio ? 'input-error' : ''}
                     value={form.precio}
                     onChange={(e) => {
-                      setForm({ ...form, precio: e.target.value })
+                      const raw = e.target.value.replace(/\./g, '').replace(/\D/g, '')
+                      setForm({ ...form, precio: raw ? formatMiles(raw) : '' })
                       if (errors.precio) setErrors({ ...errors, precio: undefined })
                     }}
                   />
@@ -599,10 +604,14 @@ function AdminContenido() {
                 <label className="form-label">
                   Tarifa por día (COP)
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     value={trabajadorForm.tarifa_dia}
-                    onChange={e => setTrabajadorForm({ ...trabajadorForm, tarifa_dia: e.target.value })}
-                    placeholder="50000"
+                    onChange={e => {
+                      const raw = e.target.value.replace(/\./g, '').replace(/\D/g, '')
+                      setTrabajadorForm({ ...trabajadorForm, tarifa_dia: raw ? formatMiles(raw) : '' })
+                    }}
+                    placeholder="50.000"
                   />
                 </label>
               </div>
@@ -610,14 +619,14 @@ function AdminContenido() {
                 <button className="btn-form-cancel" onClick={() => setTrabajadorForm(null)}>Cancelar</button>
                 <button
                   className="btn-form-save"
-                  disabled={trabajadorSaving || !trabajadorForm.nombre.trim() || !trabajadorForm.tarifa_dia}
+                  disabled={trabajadorSaving || !trabajadorForm.nombre.trim() || parseMiles(trabajadorForm.tarifa_dia) <= 0}
                   onClick={async () => {
                     setTrabajadorSaving(true)
                     try {
                       const payload = {
                         nombre: trabajadorForm.nombre.trim(),
                         rol: trabajadorForm.rol.trim() || 'Trabajador',
-                        tarifa_dia: parseInt(trabajadorForm.tarifa_dia),
+                        tarifa_dia: parseMiles(trabajadorForm.tarifa_dia),
                         recargo_festivo: 1.0,
                       }
                       if (trabajadorForm.id) {
@@ -667,7 +676,7 @@ function AdminContenido() {
                           title="Editar"
                           onClick={() => setTrabajadorForm({
                             ...t,
-                            tarifa_dia: String(t.tarifa_dia),
+                            tarifa_dia: t.tarifa_dia ? formatMiles(String(t.tarifa_dia)) : '',
                           })}
                         >✏️</button>
                         <button
@@ -700,7 +709,7 @@ function AdminContenido() {
                 <div className="admin-card-header">
                   <span className="admin-card-nombre">{t.nombre}</span>
                   <div className="admin-card-acciones">
-                    <button className="btn-edit" title="Editar" onClick={() => setTrabajadorForm({ ...t, tarifa_dia: String(t.tarifa_dia) })}>✏️</button>
+                    <button className="btn-edit" title="Editar" onClick={() => setTrabajadorForm({ ...t, tarifa_dia: t.tarifa_dia ? formatMiles(String(t.tarifa_dia)) : '' })}>✏️</button>
                     <button className="btn-edit" title="Eliminar" onClick={async () => { await api.delete(`/nomina/trabajadores/${t.id}`); flash('Trabajador desactivado ✓'); cargarTrabajadores() }}>🗑</button>
                   </div>
                 </div>
