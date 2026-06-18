@@ -1,23 +1,24 @@
 import { useState } from 'react'
 import { formatCOP } from '../api/client'
 import { formatMiles, parseMiles } from '../utils/formatMiles'
+import '../pages/Creditos.css'
 
 const METODOS = ['Efectivo', 'Nequi', 'Transferencia']
 
 export default function ModalPagoCredito({ credito, onPago, onCerrar }) {
   const saldo = credito.saldo ?? (credito.total_deuda - credito.total_pagado)
-  const [montoDisplay, setMontoDisplay] = useState('')
+  const [montoDisplay, setMontoDisplay] = useState(formatMiles(saldo))
   const [metodo, setMetodo]             = useState('Efectivo')
-  const [cargando, setCargando]         = useState(false)
+  const [procesando, setProcesando]     = useState(false)
   const [error, setError]               = useState('')
 
-  const monto = parseMiles(montoDisplay)
-  const restante = saldo - monto
-  const pagoCompleto = restante <= 0
+  const monto     = parseMiles(montoDisplay)
+  const restante  = Math.max(0, saldo - monto)
+  const esPagoTotal = monto >= saldo
 
   const confirmar = async () => {
     if (monto <= 0) { setError('Ingresa un monto válido'); return }
-    setCargando(true)
+    setProcesando(true)
     setError('')
     try {
       const res = await fetch(`/creditos/${credito.id}/pagar`, {
@@ -32,54 +33,56 @@ export default function ModalPagoCredito({ credito, onPago, onCerrar }) {
       onPago()
     } catch (e) {
       setError(e.message)
-      setCargando(false)
+      setProcesando(false)
     }
   }
 
   return (
     <div className="modal-overlay" onClick={onCerrar} role="dialog">
-      <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: 380 }}>
-        <div className="modal-header">
+      <div className="modal-pago-credito" onClick={e => e.stopPropagation()}>
+        <div className="modal-pago-header">
           <div>
-            <div className="modal-title">Registrar pago</div>
-            <div className="modal-mesa">{credito.nombre_cliente}</div>
+            <div className="modal-pago-titulo">Registrar pago</div>
+            <div className="modal-pago-cliente">{credito.nombre_cliente}</div>
           </div>
           <button className="modal-close" onClick={onCerrar}>✕</button>
         </div>
 
-        <div className="modal-body">
-          <div style={{ textAlign: 'center', marginBottom: 16 }}>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>
-              Deuda actual
-            </div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: '#f87171', fontVariantNumeric: 'tabular-nums' }}>
-              {formatCOP(saldo)}
+        <div className="modal-pago-body">
+          <div className="modal-pago-deuda">
+            Deuda actual: <span>{formatCOP(saldo)}</span>
+          </div>
+
+          <div>
+            <div className="modal-monto-label">MONTO QUE TRAE EL CLIENTE</div>
+            <div className="modal-monto-row">
+              <input
+                type="text"
+                inputMode="numeric"
+                className="modal-monto-input"
+                value={montoDisplay}
+                autoFocus
+                onChange={e => {
+                  const raw = e.target.value.replace(/\./g, '').replace(/\D/g, '')
+                  setMontoDisplay(raw ? formatMiles(raw) : '')
+                }}
+              />
+              <button
+                className="btn-pago-total"
+                onClick={() => setMontoDisplay(formatMiles(saldo))}
+              >
+                Pago total
+              </button>
             </div>
           </div>
 
-          <div className="modal-section">
-            <div className="modal-section-label">Monto a pagar</div>
-            <input
-              type="text"
-              inputMode="numeric"
-              className="recibido-input"
-              value={montoDisplay}
-              onChange={e => {
-                const raw = e.target.value.replace(/\./g, '').replace(/\D/g, '')
-                setMontoDisplay(raw ? formatMiles(raw) : '')
-              }}
-              placeholder="$ 0"
-              autoFocus
-            />
-          </div>
-
-          <div className="modal-section">
-            <div className="modal-section-label">Método de pago</div>
-            <div className="payment-options">
+          <div>
+            <div className="modal-monto-label">MÉTODO DE PAGO</div>
+            <div className="metodos-pago-row">
               {METODOS.map(m => (
                 <button
                   key={m}
-                  className={`payment-btn${metodo === m ? ' selected' : ''}`}
+                  className={`metodo-pill${metodo === m ? ' activo' : ''}`}
                   onClick={() => setMetodo(m)}
                 >
                   {m}
@@ -89,38 +92,26 @@ export default function ModalPagoCredito({ credito, onPago, onCerrar }) {
           </div>
 
           {monto > 0 && (
-            <div className="vuelto-table" style={{ marginTop: 12 }}>
-              <div className="vuelto-row">
-                <span className="vuelto-label">Paga</span>
-                <span className="vuelto-neutral">{formatCOP(monto)}</span>
-              </div>
-              <div className="vuelto-row">
-                <span className="vuelto-label">Queda</span>
-                <span className={`vuelto-amount ${pagoCompleto ? 'ok' : 'short'}`}>
-                  {pagoCompleto ? formatCOP(0) : formatCOP(restante)}
-                </span>
-              </div>
-              <div className="vuelto-divider" />
-              <div style={{ textAlign: 'center', paddingTop: 8 }}>
-                {pagoCompleto
-                  ? <span style={{ background: '#0a1a0a', color: '#4ade80', border: '1px solid #22c55e', borderRadius: 99, padding: '4px 12px', fontSize: 12, fontWeight: 700 }}>PAGO COMPLETO</span>
-                  : <span style={{ background: '#1a1200', color: '#fbbf24', border: '1px solid var(--gold)', borderRadius: 99, padding: '4px 12px', fontSize: 12, fontWeight: 700 }}>PAGO PARCIAL</span>
-                }
-              </div>
+            <div className={`preview-resultado ${esPagoTotal ? 'preview-completo' : 'preview-parcial'}`}>
+              {esPagoTotal ? (
+                <>✓ PAGO COMPLETO — El crédito quedará saldado</>
+              ) : (
+                <>PAGO PARCIAL — Queda pendiente: {formatCOP(restante)}</>
+              )}
             </div>
           )}
 
-          {error && <p className="modal-error">{error}</p>}
+          {error && <p className="modal-pago-error">{error}</p>}
         </div>
 
-        <div className="modal-footer">
-          <button className="btn-cancelar" onClick={onCerrar}>Cancelar</button>
+        <div className="modal-pago-footer">
+          <button className="btn-modal-cancelar" onClick={onCerrar}>Cancelar</button>
           <button
-            className="btn-confirmar"
+            className="btn-modal-confirmar-pago"
             onClick={confirmar}
-            disabled={monto <= 0 || cargando}
+            disabled={monto <= 0 || procesando}
           >
-            {cargando ? <span className="spinner" /> : 'Confirmar pago'}
+            {procesando ? <span className="spinner" /> : `Confirmar ${formatCOP(monto)}`}
           </button>
         </div>
       </div>

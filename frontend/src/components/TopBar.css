@@ -79,6 +79,7 @@
 .topbar-link:hover { background: var(--bg-hover); color: var(--text-secondary); }
 .topbar-link.active { background: var(--red-dim); color: #f87171; }
 .topbar-link.insumos-link.active { background: #1a1200; color: var(--gold); }
+.topbar-link.creditos-link.active { background: #1a1200; color: #F0A500; }
 
 .topbar-right {
   display: flex;

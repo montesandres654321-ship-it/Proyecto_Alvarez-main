@@ -43,6 +43,27 @@ def listar_pendientes():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ── GET /creditos/historial — créditos pagados ───────────────────────────────
+@router.get("/historial")
+def listar_pagados():
+    try:
+        with conexion() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT id, id_factura, nombre_cliente, total_deuda,
+                           total_pagado, estado, fecha_credito, fecha_pago, cajero
+                    FROM creditos
+                    WHERE estado = 'pagado'
+                    ORDER BY fecha_pago DESC
+                    LIMIT 100
+                    """
+                )
+                return cur.fetchall() or []
+    except ErrorBaseDatos as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ── GET /creditos/clientes — autocompletado ───────────────────────────────────
 @router.get("/clientes")
 def listar_clientes():

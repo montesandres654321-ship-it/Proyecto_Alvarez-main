@@ -36,6 +36,9 @@ export default function TopBar() {
           <NavLink to="/ventas" className={({ isActive }) => `topbar-link${isActive ? ' active' : ''}`}>
             Ventas
           </NavLink>
+          <NavLink to="/creditos" className={({ isActive }) => `topbar-link creditos-link${isActive ? ' active' : ''}`}>
+            💳 Créditos
+          </NavLink>
           {rol === 'admin' && (
             <>
               <NavLink to="/reportes" className={({ isActive }) => `topbar-link${isActive ? ' active' : ''}`}>

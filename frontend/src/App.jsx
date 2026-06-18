@@ -11,6 +11,7 @@ import Reportes from './pages/Reportes'
 import Admin from './pages/Admin'
 import Insumos from './pages/Insumos'
 import Nomina from './pages/Nomina'
+import Creditos from './pages/Creditos'
 import './App.css'
 
 function WSManager() {
@@ -81,6 +82,12 @@ export default function App() {
             <Route path="/ventas" element={
               <RutaProtegida>
                 <Venta />
+              </RutaProtegida>
+            } />
+
+            <Route path="/creditos" element={
+              <RutaProtegida>
+                <Creditos />
               </RutaProtegida>
             } />
 

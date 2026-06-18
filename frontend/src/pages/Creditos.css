@@ -1,0 +1,324 @@
+.creditos-page {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px;
+  padding-bottom: 80px;
+  max-width: 600px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.creditos-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.creditos-header h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+.creditos-total-badge {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f87171;
+  background: #1a0000;
+  padding: 4px 12px;
+  border-radius: 99px;
+  border: 1px solid var(--danger);
+}
+
+.creditos-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.credito-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: 99px;
+  border: 1px solid var(--border-default);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 120ms;
+}
+.credito-tab.activo {
+  background: #1a0a00;
+  border-color: #F0A500;
+  color: #F0A500;
+}
+.tab-count {
+  background: #CE1126;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 99px;
+}
+
+.creditos-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.creditos-vacio {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.credito-card-full {
+  background: var(--bg-surface);
+  border: 1.5px solid #F0A500;
+  border-radius: var(--radius-xl);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.credito-card-full.pagado {
+  border-color: #22c55e;
+  opacity: 0.7;
+}
+.credito-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.credito-card-nombre {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.credito-card-factura {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.credito-card-saldo {
+  font-size: 20px;
+  font-weight: 700;
+  color: #F0A500;
+  font-variant-numeric: tabular-nums;
+}
+.credito-progreso {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.credito-progreso-bar {
+  height: 6px;
+  background: #1a1a1a;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.credito-progreso-fill {
+  height: 100%;
+  background: #22c55e;
+  border-radius: 3px;
+  transition: width 300ms;
+}
+.credito-progreso-txt {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.btn-credito-pagar {
+  width: 100%;
+  padding: 12px;
+  background: var(--red);
+  border: none;
+  border-radius: var(--radius-md);
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 120ms;
+}
+.btn-credito-pagar:hover { opacity: 0.9; }
+.credito-pagado-badge {
+  font-size: 12px;
+  font-weight: 600;
+  color: #4ade80;
+  background: #0f2010;
+  padding: 4px 10px;
+  border-radius: 99px;
+  border: 1px solid #22c55e;
+  white-space: nowrap;
+}
+
+/* ── Modal pago crédito ──────────────────────────────────────────────────── */
+.modal-pago-credito {
+  background: #141414;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-xl);
+  width: 100%;
+  max-width: 400px;
+  overflow: hidden;
+}
+.modal-pago-header {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.modal-pago-titulo {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.modal-pago-cliente {
+  font-size: 20px;
+  font-weight: 700;
+  color: #F0A500;
+  margin-top: 4px;
+}
+.modal-pago-body {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.modal-pago-deuda {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+}
+.modal-pago-deuda span {
+  color: #f87171;
+  font-weight: 600;
+}
+.modal-monto-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  margin-bottom: 6px;
+}
+.modal-monto-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+.modal-monto-input {
+  flex: 1;
+  padding: 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  color: var(--gold);
+  font-size: 20px;
+  font-weight: 700;
+  text-align: right;
+  outline: none;
+  font-variant-numeric: tabular-nums;
+  box-sizing: border-box;
+}
+.modal-monto-input:focus { border-color: var(--gold); }
+.btn-pago-total {
+  padding: 8px 14px;
+  background: #1a1200;
+  border: 1px solid var(--gold);
+  border-radius: var(--radius-md);
+  color: var(--gold);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.metodos-pago-row {
+  display: flex;
+  gap: 8px;
+}
+.metodo-pill {
+  flex: 1;
+  padding: 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+  transition: all 120ms;
+}
+.metodo-pill.activo {
+  background: var(--red-dim);
+  border-color: var(--red);
+  color: #f87171;
+}
+.preview-resultado {
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  text-align: center;
+  font-weight: 600;
+}
+.preview-completo {
+  background: #0f2010;
+  border: 1px solid #22c55e;
+  color: #4ade80;
+}
+.preview-parcial {
+  background: #1a1200;
+  border: 1px solid var(--gold);
+  color: #fbbf24;
+}
+.modal-pago-footer {
+  padding: 14px 20px;
+  display: flex;
+  gap: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+.btn-modal-cancelar {
+  flex: 1;
+  padding: 12px;
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 120ms;
+}
+.btn-modal-cancelar:hover { border-color: var(--border-default); }
+.btn-modal-confirmar-pago {
+  flex: 2;
+  padding: 12px;
+  background: var(--red);
+  border: none;
+  border-radius: var(--radius-md);
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 120ms;
+}
+.btn-modal-confirmar-pago:hover:not(:disabled) { background: var(--red-hover); }
+.btn-modal-confirmar-pago:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.modal-pago-error {
+  color: var(--danger);
+  font-size: 13px;
+  text-align: center;
+}
