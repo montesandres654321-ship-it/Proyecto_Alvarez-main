@@ -46,6 +46,71 @@
   border-right: 1px solid var(--border-subtle);
 }
 
+.right-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Panel créditos pendientes ─────────────────────────────────────────── */
+.creditos-panel {
+  padding: 12px;
+  border-top: 1px solid var(--border-subtle);
+  overflow-y: auto;
+  max-height: 280px;
+  flex-shrink: 0;
+}
+.creditos-titulo {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 8px;
+}
+.credito-card {
+  background: #1a0a00;
+  border: 1px solid #F0A500;
+  border-radius: var(--radius-lg);
+  padding: 10px 12px;
+  margin-bottom: 6px;
+}
+.credito-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.credito-nombre {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.credito-deuda {
+  font-size: 14px;
+  font-weight: 700;
+  color: #F0A500;
+  font-variant-numeric: tabular-nums;
+}
+.credito-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.credito-fecha {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.btn-registrar-pago {
+  padding: 5px 12px;
+  background: var(--red);
+  border: none;
+  border-radius: var(--radius-md);
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .category-tabs {
   display: flex;
   gap: 4px;

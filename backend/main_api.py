@@ -15,7 +15,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from persistencia import inicializar_bd
-from backend.routers import auth, configuracion, insumos, mesas, nomina, preparaciones, productos, reportes, turnos, ventas
+from backend.routers import auth, configuracion, creditos, insumos, mesas, nomina, preparaciones, productos, reportes, turnos, ventas
 from backend.websocket import set_event_loop, websocket_mesas
 
 # ── Paths ─────────────────────────────────────────────────────────────────
@@ -91,6 +91,7 @@ async def pin_middleware(request: Request, call_next):
 # ── Routers API ───────────────────────────────────────────────────────────
 
 app.include_router(auth.router)
+app.include_router(creditos.router)
 app.include_router(productos.router)
 app.include_router(configuracion.router)
 app.include_router(ventas.router)

@@ -3,23 +3,27 @@ import { formatCOP } from '../api/client'
 import './ModalCobro.css'
 
 const METODOS = [
-  { id: 'Efectivo',       icono: '💵', label: 'Efectivo' },
-  { id: 'Nequi',          icono: '📱', label: 'Nequi' },
-  { id: 'Transferencia',  icono: '🏦', label: 'Transferencia' },
-  { id: 'Otros',          icono: '···', label: 'Otros' },
+  { id: 'Efectivo',      icono: '💵', label: 'Efectivo' },
+  { id: 'Nequi',         icono: '📱', label: 'Nequi' },
+  { id: 'Transferencia', icono: '🏦', label: 'Transferencia' },
+  { id: 'Otros',         icono: '···', label: 'Otros' },
+  { id: 'Crédito',       icono: '💳', label: 'Crédito' },
 ]
 
 export default function ModalCobro({ mesa, slot, nequiNumero, turno, onConfirmar, onCancelar }) {
   const total = mesa?.total ?? 0
   const esDomicilio = slot?.tipo === 'domicilio' || slot != null
 
-  const [metodo, setMetodo]             = useState('Efectivo')
-  const [tipoEntrega, setTipoEntrega]   = useState(esDomicilio ? 'Domicilio' : 'Mesa')
+  const [metodo, setMetodo]               = useState('Efectivo')
+  const [tipoEntrega, setTipoEntrega]     = useState(esDomicilio ? 'Domicilio' : 'Mesa')
   const [montoRecibido, setMontoRecibido] = useState(0)
-  const [referencia, setReferencia]     = useState('')
-  const [otroMetodo, setOtroMetodo]     = useState('')
-  const [cargando, setCargando]         = useState(false)
-  const [error, setError]               = useState('')
+  const [referencia, setReferencia]       = useState('')
+  const [otroMetodo, setOtroMetodo]       = useState('')
+  const [nombreCliente, setNombreCliente] = useState(slot?.nombre || '')
+  const [clientesSugeridos, setClientesSugeridos] = useState([])
+  const [alertaDeuda, setAlertaDeuda]     = useState(null)
+  const [cargando, setCargando]           = useState(false)
+  const [error, setError]                 = useState('')
   const firstFocusRef = useRef(null)
 
   useEffect(() => {
@@ -31,14 +35,41 @@ export default function ModalCobro({ mesa, slot, nequiNumero, turno, onConfirmar
 
   const vuelto = montoRecibido - total
   const montoInsuficiente = metodo === 'Efectivo' && montoRecibido > 0 && vuelto < 0
+  const creditoSinNombre = metodo === 'Crédito' && !nombreCliente.trim()
+
+  const buscarSugerencias = async (valor) => {
+    if (valor.length < 2) { setClientesSugeridos([]); return }
+    try {
+      const res = await fetch('/creditos/clientes')
+      const data = await res.json()
+      setClientesSugeridos(
+        data.filter(c => c.toLowerCase().includes(valor.toLowerCase())).slice(0, 5)
+      )
+    } catch {}
+  }
+
+  const verificarDeuda = async (nombre) => {
+    if (nombre.trim().length < 2) { setAlertaDeuda(null); return }
+    try {
+      const res = await fetch(`/creditos/cliente/${encodeURIComponent(nombre.trim())}`)
+      const data = await res.json()
+      if (data.length > 0) {
+        const deudaTotal = data.reduce((s, c) => s + (c.total_deuda - c.total_pagado), 0)
+        setAlertaDeuda(deudaTotal)
+      } else {
+        setAlertaDeuda(null)
+      }
+    } catch {}
+  }
 
   const confirmar = async () => {
     setCargando(true)
     setError('')
     const metodoFinal = metodo === 'Otros' ? (otroMetodo.trim() || 'Otros') : metodo
     const montoFinal  = metodo === 'Efectivo' ? montoRecibido : 0
+    const clienteFinal = metodo === 'Crédito' ? nombreCliente.trim() : (slot?.nombre ?? '')
     try {
-      await onConfirmar(metodoFinal, tipoEntrega, montoFinal)
+      await onConfirmar(metodoFinal, tipoEntrega, montoFinal, clienteFinal, total)
     } catch (e) {
       setError(e?.response?.data?.detail ?? 'Error al procesar la venta')
       setCargando(false)
@@ -67,7 +98,7 @@ export default function ModalCobro({ mesa, slot, nequiNumero, turno, onConfirmar
             <div className="modal-total-amount">{formatCOP(total)}</div>
           </div>
 
-          {/* Método de pago — grid 2×2 */}
+          {/* Método de pago — grid 2×3 */}
           <div className="modal-section">
             <div className="modal-section-label">Método de pago</div>
             <div className="payment-grid" role="radiogroup" aria-label="Método de pago">
@@ -109,6 +140,44 @@ export default function ModalCobro({ mesa, slot, nequiNumero, turno, onConfirmar
                 value={otroMetodo}
                 onChange={(e) => setOtroMetodo(e.target.value)}
               />
+            )}
+
+            {/* ── Crédito: nombre del cliente ── */}
+            {metodo === 'Crédito' && (
+              <div className="credito-cliente-section">
+                <label className="credito-cliente-label">NOMBRE DEL CLIENTE</label>
+                <input
+                  type="text"
+                  className="credito-input"
+                  value={nombreCliente}
+                  onChange={async (e) => {
+                    setNombreCliente(e.target.value)
+                    buscarSugerencias(e.target.value)
+                  }}
+                  onBlur={() => verificarDeuda(nombreCliente)}
+                  placeholder="Nombre del cliente"
+                />
+                {clientesSugeridos.length > 0 && (
+                  <div className="credito-sugerencias">
+                    {clientesSugeridos.map(c => (
+                      <button
+                        key={c}
+                        className="credito-sugerencia"
+                        onMouseDown={() => {
+                          setNombreCliente(c)
+                          setClientesSugeridos([])
+                          verificarDeuda(c)
+                        }}
+                      >{c}</button>
+                    ))}
+                  </div>
+                )}
+                {alertaDeuda && (
+                  <div className="credito-alerta">
+                    ⚠️ {nombreCliente} ya debe {formatCOP(alertaDeuda)}. ¿Continuar con nueva deuda?
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
@@ -190,8 +259,8 @@ export default function ModalCobro({ mesa, slot, nequiNumero, turno, onConfirmar
           <button
             className="btn-confirmar"
             onClick={confirmar}
-            disabled={cargando || montoInsuficiente}
-            title={montoInsuficiente ? 'Monto insuficiente' : undefined}
+            disabled={cargando || montoInsuficiente || creditoSinNombre}
+            title={creditoSinNombre ? 'Ingresa el nombre del cliente' : montoInsuficiente ? 'Monto insuficiente' : undefined}
           >
             {cargando ? <span className="spinner" /> : `Cobrar ${formatCOP(total)}`}
           </button>

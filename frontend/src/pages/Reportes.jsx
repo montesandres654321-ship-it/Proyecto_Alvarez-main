@@ -885,6 +885,21 @@ function TabDashboard() {
   const [periodo,        setPeriodo]        = useState('mes')
   const [cargando,       setCargando]       = useState(true)
   const [cargandoTop,    setCargandoTop]    = useState(false)
+  const [creditosDatos,  setCreditosDatos]  = useState({ total: 0, count: 0 })
+
+  useEffect(() => {
+    const cargarCreditos = async () => {
+      try {
+        const res = await fetch('/creditos')
+        const data = await res.json()
+        if (Array.isArray(data)) {
+          const total = data.reduce((s, c) => s + (c.saldo ?? (c.total_deuda - c.total_pagado)), 0)
+          setCreditosDatos({ total, count: data.length })
+        }
+      } catch {}
+    }
+    cargarCreditos()
+  }, [])
 
   useEffect(() => {
     const cargar = async () => {
@@ -964,6 +979,13 @@ function TabDashboard() {
           </div>
           <div className="dashboard-mini-sub">{mejorSemana ? formatCOP(mejorSemana.total_ventas) : 'Sin datos'}</div>
         </div>
+        {creditosDatos.count > 0 && (
+          <div className="dashboard-mini-card" style={{ borderColor: '#F0A500' }}>
+            <div className="dashboard-mini-label" style={{ color: '#F0A500' }}>💳 Créditos pendientes</div>
+            <div className="dashboard-mini-val rojo" style={{ color: '#F0A500' }}>{formatCOP(creditosDatos.total)}</div>
+            <div className="dashboard-mini-sub">{creditosDatos.count} cliente{creditosDatos.count !== 1 ? 's' : ''}</div>
+          </div>
+        )}
       </div>
 
       {/* ── Filtro de período ── */}

@@ -315,6 +315,37 @@ def _crear_base_y_tablas() -> None:
         )
         """
       )
+      cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS creditos (
+          id              SERIAL       PRIMARY KEY,
+          id_factura      VARCHAR(24)  DEFAULT NULL,
+          nombre_cliente  VARCHAR(100) NOT NULL,
+          total_deuda     INT          NOT NULL,
+          total_pagado    INT          NOT NULL DEFAULT 0,
+          estado          VARCHAR(10)  NOT NULL DEFAULT 'pendiente'
+            CHECK (estado IN ('pendiente', 'pagado')),
+          fecha_credito   TIMESTAMP    NOT NULL DEFAULT NOW(),
+          fecha_pago      TIMESTAMP    DEFAULT NULL,
+          cajero          VARCHAR(100) DEFAULT ''
+        )
+        """
+      )
+      cur.execute(
+        "CREATE INDEX IF NOT EXISTS idx_creditos_estado ON creditos(estado)"
+      )
+      cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS credito_pagos (
+          id          SERIAL      PRIMARY KEY,
+          credito_id  INT         NOT NULL REFERENCES creditos(id) ON DELETE CASCADE,
+          monto       INT         NOT NULL,
+          metodo_pago VARCHAR(20) NOT NULL DEFAULT 'Efectivo',
+          fecha_pago  TIMESTAMP   NOT NULL DEFAULT NOW(),
+          cajero      VARCHAR(100) DEFAULT ''
+        )
+        """
+      )
 
 
 def _prefijo_año_actual() -> str:
