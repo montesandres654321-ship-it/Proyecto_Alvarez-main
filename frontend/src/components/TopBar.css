@@ -111,6 +111,42 @@
   font-variant-numeric: tabular-nums;
 }
 
+.btn-cerrar-sesion {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 14px;
+  padding: 4px 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 120ms;
+  margin-left: 4px;
+}
+.btn-cerrar-sesion:hover {
+  border-color: var(--red);
+  color: #f87171;
+  background: var(--red-dim);
+}
+
+.badge-rol {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 99px;
+  flex-shrink: 0;
+}
+.badge-rol.admin {
+  background: var(--red-dim);
+  color: #f87171;
+  border: 1px solid var(--red);
+}
+.badge-rol.cajero {
+  background: #0a1a0a;
+  color: #4ade80;
+  border: 1px solid #22c55e;
+}
+
 @media (max-width: 768px) {
   .topbar {
     padding: 0 10px;
