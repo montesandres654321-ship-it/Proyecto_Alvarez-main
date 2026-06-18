@@ -39,19 +39,26 @@ const usePOSStore = create((set, get) => ({
 
   // ── Autenticación ───────────────────────────────────────────────────────
   rol: localStorage.getItem('rol_actual') || null,
+  pinSesion: sessionStorage.getItem('pin_sesion') || null,
 
-  setRol: (rol) => {
+  setRol: (rol, pin) => {
     if (rol) {
       localStorage.setItem('rol_actual', rol)
     } else {
       localStorage.removeItem('rol_actual')
     }
-    set({ rol })
+    if (pin) {
+      sessionStorage.setItem('pin_sesion', pin)
+    } else {
+      sessionStorage.removeItem('pin_sesion')
+    }
+    set({ rol, pinSesion: pin || null })
   },
 
   cerrarSesion: () => {
     localStorage.removeItem('rol_actual')
-    set({ rol: null })
+    sessionStorage.removeItem('pin_sesion')
+    set({ rol: null, pinSesion: null })
   },
 
   get esAdmin() {

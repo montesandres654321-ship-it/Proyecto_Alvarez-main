@@ -1,15 +1,19 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api, { setPinHeader } from '../api/client'
+import usePOSStore from '../store/usePOSStore'
 import './ModalAbrirCaja.css'
 
 export default function ModalAbrirCaja({ onAbierta }) {
   const navigate = useNavigate()
-  const [cajero, setCajero]       = useState('')
-  const [efectivo, setEfectivo]   = useState('')
-  const [pin, setPin]             = useState('')
-  const [cargando, setCargando]   = useState(false)
-  const [error, setError]         = useState('')
+  const { rol, pinSesion } = usePOSStore()
+  const esCajero = rol === 'cajero'
+
+  const [cajero, setCajero]     = useState('')
+  const [efectivo, setEfectivo] = useState('')
+  const [pin, setPin]           = useState('')
+  const [cargando, setCargando] = useState(false)
+  const [error, setError]       = useState('')
   const cajeroRef = useRef(null)
 
   const abrir = async () => {
@@ -18,24 +22,29 @@ export default function ModalAbrirCaja({ onAbierta }) {
       cajeroRef.current?.focus()
       return
     }
-    if (pin.length < 4) {
-      setError('Ingresa el PIN de 4 digitos')
-      return
-    }
     const monto = parseInt(efectivo || '0', 10) || 0
     if (monto < 0) {
       setError('El monto no puede ser negativo')
       return
     }
+
+    // Cajero usa el PIN guardado en sesión; admin ingresa el PIN manualmente
+    const pinUsado = esCajero ? (pinSesion || '') : pin
+
+    if (!esCajero && pinUsado.length < 4) {
+      setError('Ingresa el PIN de 4 dígitos')
+      return
+    }
+
     setCargando(true)
     setError('')
     try {
       const res = await api.post(
         '/turnos/abrir',
         { cajero: cajero.trim(), efectivo_inicial: monto },
-        { headers: { 'X-PIN': pin } }
+        { headers: { 'X-PIN': pinUsado } }
       )
-      setPinHeader(pin)
+      if (!esCajero) setPinHeader(pinUsado)
       onAbierta(res.data)
     } catch (e) {
       const status = e?.response?.status
@@ -49,7 +58,6 @@ export default function ModalAbrirCaja({ onAbierta }) {
   }
 
   return (
-    /* Sin onClick en el overlay — no se puede cerrar sin abrir el turno */
     <div className="modal-overlay modal-overlay-blocked">
       <div className="modal-caja-box">
         <div className="caja-header">
@@ -88,22 +96,24 @@ export default function ModalAbrirCaja({ onAbierta }) {
             <div className="caja-note">Este monto se usara para calcular vueltos</div>
           </div>
 
-          <div className="caja-field">
-            <label className="caja-label">PIN ADMINISTRADOR</label>
-            <input
-              className="caja-pin-input"
-              type="password"
-              inputMode="numeric"
-              maxLength={4}
-              placeholder="••••"
-              value={pin}
-              onChange={(e) => {
-                setPin(e.target.value.replace(/\D/g, '').slice(0, 4))
-                setError('')
-              }}
-              onKeyDown={(e) => e.key === 'Enter' && abrir()}
-            />
-          </div>
+          {!esCajero && (
+            <div className="caja-field">
+              <label className="caja-label">PIN ADMINISTRADOR</label>
+              <input
+                className="caja-pin-input"
+                type="password"
+                inputMode="numeric"
+                maxLength={4}
+                placeholder="••••"
+                value={pin}
+                onChange={(e) => {
+                  setPin(e.target.value.replace(/\D/g, '').slice(0, 4))
+                  setError('')
+                }}
+                onKeyDown={(e) => e.key === 'Enter' && abrir()}
+              />
+            </div>
+          )}
 
           {error && <p className="caja-error">{error}</p>}
         </div>
@@ -118,26 +128,19 @@ export default function ModalAbrirCaja({ onAbierta }) {
           </button>
         </div>
 
-        <div className="modal-caja-alternativas">
-          <button
-            className="btn-ir-insumos"
-            onClick={() => navigate('/insumos')}
-          >
-            🛒 Registrar compra de insumos
-          </button>
-          <button
-            className="btn-ir-nomina"
-            onClick={() => navigate('/nomina')}
-          >
-            👥 Registrar nómina
-          </button>
-          <button
-            className="btn-ir-reportes"
-            onClick={() => navigate('/reportes')}
-          >
-            📊 Solo ver reportes
-          </button>
-        </div>
+        {!esCajero && (
+          <div className="modal-caja-alternativas">
+            <button className="btn-ir-insumos" onClick={() => navigate('/insumos')}>
+              🛒 Registrar compra de insumos
+            </button>
+            <button className="btn-ir-nomina" onClick={() => navigate('/nomina')}>
+              👥 Registrar nómina
+            </button>
+            <button className="btn-ir-reportes" onClick={() => navigate('/reportes')}>
+              📊 Solo ver reportes
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

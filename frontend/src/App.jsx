@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import usePOSStore from './store/usePOSStore'
+import { setPinHeader } from './api/client'
 import TopBar from './components/TopBar'
 import StatusBar from './components/StatusBar'
 import RutaProtegida from './components/RutaProtegida'
@@ -51,8 +52,14 @@ function WSManager() {
 }
 
 export default function App() {
-  const { cargarConfig } = usePOSStore()
-  useEffect(() => { cargarConfig() }, [])
+  const { cargarConfig, rol, pinSesion } = usePOSStore()
+  useEffect(() => {
+    cargarConfig()
+    // Restaurar PIN en el cliente axios si el admin recargó la página
+    if (rol === 'admin' && pinSesion) {
+      setPinHeader(pinSesion)
+    }
+  }, [])
 
   return (
     <BrowserRouter>

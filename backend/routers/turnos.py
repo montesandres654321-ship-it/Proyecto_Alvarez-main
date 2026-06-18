@@ -5,7 +5,7 @@ import backend  # noqa: F401
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from persistencia import abrir_turno, cerrar_turno, turno_activo, eliminar_turno, anular_turno, ErrorBaseDatos
-from backend.dependencies import verify_pin
+from backend.dependencies import verify_pin, verify_pin_o_cajero
 
 router = APIRouter(prefix="/turnos", tags=["turnos"])
 
@@ -25,7 +25,7 @@ def obtener_activo():
     return turno  # puede ser None → JSON null
 
 
-@router.post("/abrir", dependencies=[Depends(verify_pin)])
+@router.post("/abrir", dependencies=[Depends(verify_pin_o_cajero)])
 def abrir(body: AbrirTurnoIn):
     try:
         turno_id = abrir_turno(body.cajero, body.efectivo_inicial)

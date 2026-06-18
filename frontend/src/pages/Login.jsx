@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import usePOSStore from '../store/usePOSStore'
+import { setPinHeader } from '../api/client'
 import './Login.css'
 
 export default function Login() {
@@ -44,7 +45,8 @@ export default function Login() {
         return
       }
 
-      setRol(data.rol)
+      if (data.rol === 'admin') setPinHeader(pinUsado)
+      setRol(data.rol, pinUsado)
       navigate('/ventas')
     } catch {
       setError('Error de conexión')
