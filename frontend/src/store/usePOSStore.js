@@ -37,6 +37,31 @@ const usePOSStore = create((set, get) => ({
   numMesas: 8,
   pinAdmin: null,
 
+  // ── Autenticación ───────────────────────────────────────────────────────
+  rol: localStorage.getItem('rol_actual') || null,
+
+  setRol: (rol) => {
+    if (rol) {
+      localStorage.setItem('rol_actual', rol)
+    } else {
+      localStorage.removeItem('rol_actual')
+    }
+    set({ rol })
+  },
+
+  cerrarSesion: () => {
+    localStorage.removeItem('rol_actual')
+    set({ rol: null })
+  },
+
+  get esAdmin() {
+    return get().rol === 'admin'
+  },
+
+  get esCajero() {
+    return get().rol === 'cajero' || get().rol === 'admin'
+  },
+
   // ── Acciones ────────────────────────────────────────────────────────────
   setMesaActual: (id) => set({ mesaActual: id }),
 

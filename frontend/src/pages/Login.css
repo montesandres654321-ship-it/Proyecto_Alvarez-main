@@ -1,0 +1,197 @@
+.login-page {
+  min-height: 100dvh;
+  background: var(--bg-base);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.login-box {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+.login-logo-img {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--red);
+  margin-bottom: 12px;
+}
+.login-titulo {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+.login-subtitulo {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 32px;
+}
+
+/* Botones de rol */
+.login-roles {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.btn-rol {
+  width: 100%;
+  padding: 16px 20px;
+  border-radius: var(--radius-xl);
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  transition: all 150ms;
+  text-align: left;
+}
+.btn-rol-admin {
+  background: #1e0a0a;
+  border-color: var(--red);
+}
+.btn-rol-admin:hover {
+  background: #2a0f0f;
+}
+.btn-rol-cajero {
+  background: #0a1a0a;
+  border-color: #22c55e;
+}
+.btn-rol-cajero:hover {
+  background: #0f2010;
+}
+.btn-rol-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+.btn-rol-texto {
+  display: flex;
+  flex-direction: column;
+}
+.btn-rol-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: block;
+}
+.btn-rol-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  display: block;
+  margin-top: 2px;
+}
+
+/* PIN */
+.login-pin-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+.login-pin-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.btn-volver {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 4px 0;
+}
+.btn-volver:hover {
+  color: var(--text-primary);
+}
+.login-pin-titulo {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.pin-puntos {
+  display: flex;
+  gap: 16px;
+  margin: 8px 0;
+}
+.pin-punto {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--border-strong);
+  background: transparent;
+  transition: all 150ms;
+}
+.pin-punto.activo {
+  background: var(--red);
+  border-color: var(--red);
+}
+.login-error {
+  font-size: 13px;
+  color: #f87171;
+  text-align: center;
+}
+.pin-teclado {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: 100%;
+  max-width: 260px;
+}
+.pin-key {
+  aspect-ratio: 1;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 22px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 100ms;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pin-key:hover:not(:disabled) {
+  background: var(--bg-elevated);
+  border-color: var(--border-strong);
+}
+.pin-key:active:not(:disabled) {
+  transform: scale(0.92);
+  background: var(--red-dim);
+  border-color: var(--red);
+}
+.pin-key-vacio {
+  background: transparent !important;
+  border-color: transparent !important;
+  cursor: default;
+}
+.pin-key:disabled {
+  opacity: 0.5;
+}
+.btn-ingresar {
+  width: 100%;
+  max-width: 260px;
+  padding: 14px;
+  background: var(--red);
+  border: none;
+  border-radius: var(--radius-md);
+  color: white;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 150ms;
+}
+.btn-ingresar:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
