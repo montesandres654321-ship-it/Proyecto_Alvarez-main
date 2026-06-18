@@ -155,7 +155,8 @@ def _crear_base_y_tablas() -> None:
           ('prefijo_factura',    %s, 'Prefijo base de facturas (el año se añade automáticamente)'),
           ('pin_admin',          %s, 'PIN de 4 dígitos para acceder a reportes y configuración'),
           ('domicilio_mensaje',  %s, 'Mensaje en el ticket del cliente'),
-          ('num_mesas',          %s, 'Cantidad de mesas del restaurante')
+          ('num_mesas',          %s, 'Cantidad de mesas del restaurante'),
+          ('pin_cajero',         %s, 'PIN de acceso cajeros')
         ON CONFLICT (clave) DO NOTHING
         """,
         (
@@ -165,6 +166,7 @@ def _crear_base_y_tablas() -> None:
           "1234",
           "Domicilio sin costo adicional",
           "8",
+          "0000",
         ),
       )
       cur.execute(

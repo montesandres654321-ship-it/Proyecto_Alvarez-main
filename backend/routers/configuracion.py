@@ -14,6 +14,7 @@ _CLAVES_PERMITIDAS = {
     "nombre_restaurante",
     "prefijo_factura",
     "pin_admin",
+    "pin_cajero",
     "domicilio_mensaje",
     "num_mesas",
 }
