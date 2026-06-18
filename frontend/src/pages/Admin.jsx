@@ -727,6 +727,7 @@ function AdminContenido() {
           <ConfigField label="Nombre del restaurante"       valor={config.nombre_restaurante ?? ''} onGuardar={(v) => guardarConfig('nombre_restaurante', v)} />
           <ConfigField label="Número Nequi"                 valor={config.nequi_numero ?? ''}       onGuardar={(v) => guardarConfig('nequi_numero', v)} />
           <ConfigField label="PIN administrador (4 dígitos)" valor={config.pin_admin ?? ''}         tipo="password" onGuardar={(v) => guardarConfig('pin_admin', v)} />
+          <ConfigField label="PIN cajero (4 dígitos) — compartido entre todos los cajeros" valor={config.pin_cajero ?? ''} tipo="password" onGuardar={(v) => guardarConfig('pin_cajero', v)} />
           <ConfigField label="Mensaje domicilio"            valor={config.domicilio_mensaje ?? ''}  onGuardar={(v) => guardarConfig('domicilio_mensaje', v)} />
           <ConfigField label="Número de mesas (1-20)"       valor={config.num_mesas ?? '8'}         tipo="number"   onGuardar={(v) => guardarConfig('num_mesas', v)} />
         </div>
