@@ -1,29 +1,29 @@
 import { useEffect, useState } from 'react'
 import api, { formatCOP } from '../api/client'
+import { formatMiles } from '../utils/formatMiles'
 import DatePicker from '../components/DatePicker'
 import './Insumos.css'
 
 const UNIDADES = ['kg', 'und', 'lt', 'paq', 'gr']
 
-function filaVacia(insumo) {
+function filaExtraVacia() {
   return {
-    id: insumo?.id ?? null,
-    nombre: insumo?.nombre ?? '',
-    unidad: insumo?.unidad ?? 'und',
+    nombre: '',
     cantidad: '',
-    valorUnit: insumo?.precio_ref > 0 ? String(insumo.precio_ref) : '',
+    valorUnitDisplay: '',
+    valorUnit: 0,
     subtotal: 0,
-    esExtra: !insumo,
-    editandoNombre: false,
+    unidad: 'und',
     modoSimple: false,
-    totalDirecto: '',
+    totalDirectoDisplay: '',
+    totalDirecto: 0,
   }
 }
 
 function formatearFechaLarga(fecha) {
   const d = new Date(fecha + 'T12:00:00')
   return d.toLocaleDateString('es-CO', {
-    weekday: 'long', day: 'numeric', month: 'short', year: 'numeric'
+    weekday: 'long', day: 'numeric', month: 'short', year: 'numeric',
   })
 }
 
@@ -31,31 +31,22 @@ export default function Insumos() {
   const hoy = new Date().toISOString().slice(0, 10)
 
   const [fechaSeleccionada, setFechaSeleccionada] = useState(hoy)
-  const [filas, setFilas] = useState([])
-  const [nota, setNota] = useState('')
-  const [guardando, setGuardando] = useState(false)
-  const [msg, setMsg] = useState('')
-  const [comprasHoy, setComprasHoy] = useState([])
-  const [expandida, setExpandida] = useState(null)
+  const [catalogo, setCatalogo]         = useState([])
+  const [seleccionados, setSeleccionados] = useState({})
+  const [filas, setFilas]               = useState({})
+  const [extras, setExtras]             = useState([])
+  const [nota, setNota]                 = useState('')
+  const [guardando, setGuardando]       = useState(false)
+  const [msg, setMsg]                   = useState('')
+  const [comprasHoy, setComprasHoy]     = useState([])
+  const [expandida, setExpandida]       = useState(null)
   const [confirmacion, setConfirmacion] = useState(null)
-  const [esMobil, setEsMobil] = useState(window.innerWidth <= 768)
-
-  useEffect(() => {
-    const handler = () => setEsMobil(window.innerWidth <= 768)
-    window.addEventListener('resize', handler)
-    return () => window.removeEventListener('resize', handler)
-  }, [])
 
   const cargarCatalogo = async () => {
     try {
       const res = await api.get('/insumos/catalogo')
-      setFilas(res.data.map(filaVacia))
+      setCatalogo(res.data)
     } catch {}
-  }
-
-  const resetearFilas = async () => {
-    await cargarCatalogo()
-    setNota('')
   }
 
   const cargarComprasDelDia = async (fecha) => {
@@ -70,102 +61,194 @@ export default function Insumos() {
     cargarComprasDelDia(hoy)
   }, [])
 
-  const calcularSubtotal = (f) => {
-    if (f.modoSimple) return parseInt(f.totalDirecto) || 0
-    return Math.round((parseFloat(f.cantidad) || 0) * (parseInt(f.valorUnit) || 0))
-  }
+  // ── Chips ────────────────────────────────────────────────────────────────
 
-  const actualizarFila = (idx, campo, valor) => {
-    setFilas(prev => {
-      const next = [...prev]
-      const f = { ...next[idx], [campo]: valor }
-      f.subtotal = calcularSubtotal(f)
-      next[idx] = f
-      return next
-    })
-  }
-
-  const actualizarTotalDirecto = (idx, valor) => {
-    setFilas(prev => {
-      const next = [...prev]
-      const f = { ...next[idx], totalDirecto: valor }
-      f.subtotal = parseInt(valor) || 0
-      next[idx] = f
-      return next
-    })
-  }
-
-  const toggleModoFila = (index) => {
-    setFilas(prev => prev.map((f, i) =>
-      i === index ? {
-        ...f,
-        modoSimple: !f.modoSimple,
+  const seleccionarChip = (ins) => {
+    if (seleccionados[ins.id]) return
+    setSeleccionados(prev => ({ ...prev, [ins.id]: true }))
+    setFilas(prev => ({
+      ...prev,
+      [ins.id]: {
         cantidad: '',
-        valorUnit: '',
-        totalDirecto: '',
+        valorUnitDisplay: ins.precio_ref > 0 ? formatMiles(ins.precio_ref) : '',
+        valorUnit: ins.precio_ref || 0,
         subtotal: 0,
-      } : f
-    ))
+        unidad: ins.unidad,
+        modoSimple: false,
+        totalDirectoDisplay: '',
+        totalDirecto: 0,
+      },
+    }))
   }
 
-  const agregarExtra = () => {
-    setFilas(prev => [...prev, filaVacia(null)])
+  const quitarSeleccionado = (id) => {
+    setSeleccionados(prev => { const n = { ...prev }; delete n[id]; return n })
+    setFilas(prev => { const n = { ...prev }; delete n[id]; return n })
   }
 
-  const eliminarFila = (idx) => {
-    setFilas(prev => prev.filter((_, i) => i !== idx))
+  // ── Filas de catálogo ─────────────────────────────────────────────────────
+
+  const toggleModoFila = (id) => {
+    setFilas(prev => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        modoSimple: !prev[id].modoSimple,
+        cantidad: '', valorUnitDisplay: '', valorUnit: 0,
+        subtotal: 0, totalDirectoDisplay: '', totalDirecto: 0,
+      },
+    }))
   }
 
-  const toggleEditar = (index) => {
-    setFilas(prev => prev.map((f, i) =>
-      i === index ? { ...f, editandoNombre: !f.editandoNombre } : f
-    ))
+  const actualizarCantidadFila = (id, cant) => {
+    setFilas(prev => {
+      const f = prev[id]
+      const sub = Math.round(parseFloat(cant || 0) * (f.valorUnit || 0))
+      return { ...prev, [id]: { ...f, cantidad: cant, subtotal: sub } }
+    })
   }
 
-  const actualizarNombre = (index, nuevoNombre) => {
-    setFilas(prev => prev.map((f, i) =>
-      i === index ? { ...f, nombre: nuevoNombre, editandoNombre: false } : f
-    ))
+  const actualizarValorUnit = (id, raw) => {
+    const num = raw ? parseInt(raw) : 0
+    setFilas(prev => {
+      const f = prev[id]
+      return {
+        ...prev,
+        [id]: {
+          ...f,
+          valorUnitDisplay: raw ? formatMiles(raw) : '',
+          valorUnit: num,
+          subtotal: Math.round(parseFloat(f.cantidad || 0) * num),
+        },
+      }
+    })
   }
 
-  const totalCompra = filas.reduce((s, f) => s + f.subtotal, 0)
+  const actualizarTotalDirecto = (id, raw) => {
+    const num = raw ? parseInt(raw) : 0
+    setFilas(prev => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        totalDirectoDisplay: raw ? formatMiles(raw) : '',
+        totalDirecto: num,
+        subtotal: num,
+      },
+    }))
+  }
+
+  const actualizarUnidadFila = (id, unidad) => {
+    setFilas(prev => ({ ...prev, [id]: { ...prev[id], unidad } }))
+  }
+
+  // ── Extras ────────────────────────────────────────────────────────────────
+
+  const agregarExtra = () => setExtras(prev => [...prev, filaExtraVacia()])
+
+  const actualizarExtra = (i, updates) => {
+    setExtras(prev => {
+      const next = [...prev]
+      next[i] = { ...next[i], ...updates }
+      return next
+    })
+  }
+
+  const actualizarExtraCantidad = (i, cant) => {
+    setExtras(prev => {
+      const next = [...prev]
+      const ex = next[i]
+      next[i] = { ...ex, cantidad: cant, subtotal: Math.round(parseFloat(cant || 0) * (ex.valorUnit || 0)) }
+      return next
+    })
+  }
+
+  const actualizarExtraValorUnit = (i, raw) => {
+    const num = raw ? parseInt(raw) : 0
+    setExtras(prev => {
+      const next = [...prev]
+      const ex = next[i]
+      next[i] = {
+        ...ex,
+        valorUnitDisplay: raw ? formatMiles(raw) : '',
+        valorUnit: num,
+        subtotal: Math.round(parseFloat(ex.cantidad || 0) * num),
+      }
+      return next
+    })
+  }
+
+  const actualizarExtraTotalDirecto = (i, raw) => {
+    const num = raw ? parseInt(raw) : 0
+    setExtras(prev => {
+      const next = [...prev]
+      next[i] = {
+        ...next[i],
+        totalDirectoDisplay: raw ? formatMiles(raw) : '',
+        totalDirecto: num,
+        subtotal: num,
+      }
+      return next
+    })
+  }
+
+  const toggleModoExtra = (i) => {
+    setExtras(prev => {
+      const next = [...prev]
+      next[i] = {
+        ...next[i],
+        modoSimple: !next[i].modoSimple,
+        cantidad: '', valorUnitDisplay: '', valorUnit: 0,
+        subtotal: 0, totalDirectoDisplay: '', totalDirecto: 0,
+      }
+      return next
+    })
+  }
+
+  const quitarExtra = (i) => setExtras(prev => prev.filter((_, j) => j !== i))
+
+  // ── Totales ───────────────────────────────────────────────────────────────
+
+  const totalSeleccionados = Object.entries(filas)
+    .filter(([id]) => seleccionados[id])
+    .reduce((s, [, f]) => s + f.subtotal, 0)
+  const totalExtras = extras.reduce((s, ex) => s + ex.subtotal, 0)
+  const totalCompra = totalSeleccionados + totalExtras
+
+  // ── Guardar ───────────────────────────────────────────────────────────────
 
   const guardarCompra = async () => {
-    const detalle = filas
-      .filter(f => f.subtotal > 0 && f.nombre.trim())
-      .map(f => {
-        if (f.modoSimple) {
-          return {
-            nombre_insumo: f.nombre,
-            cantidad: 1,
-            unidad: f.unidad,
-            valor_unitario: f.subtotal,
-            subtotal: f.subtotal,
-          }
-        }
-        return {
-          nombre_insumo: f.nombre,
-          cantidad: parseFloat(f.cantidad),
-          unidad: f.unidad,
-          valor_unitario: parseInt(f.valorUnit),
-          subtotal: f.subtotal,
-        }
+    const detalleSelected = catalogo
+      .filter(ins => seleccionados[ins.id] && filas[ins.id]?.subtotal > 0)
+      .map(ins => {
+        const f = filas[ins.id]
+        return f.modoSimple
+          ? { nombre_insumo: ins.nombre, cantidad: 1, unidad: f.unidad, valor_unitario: f.subtotal, subtotal: f.subtotal }
+          : { nombre_insumo: ins.nombre, cantidad: parseFloat(f.cantidad), unidad: f.unidad, valor_unitario: f.valorUnit, subtotal: f.subtotal }
       })
+
+    const detalleExtras = extras
+      .filter(ex => ex.subtotal > 0 && ex.nombre.trim())
+      .map(ex => ex.modoSimple
+        ? { nombre_insumo: ex.nombre, cantidad: 1, unidad: ex.unidad, valor_unitario: ex.subtotal, subtotal: ex.subtotal }
+        : { nombre_insumo: ex.nombre, cantidad: parseFloat(ex.cantidad), unidad: ex.unidad, valor_unitario: ex.valorUnit, subtotal: ex.subtotal }
+      )
+
+    const detalle = [...detalleSelected, ...detalleExtras]
     if (detalle.length === 0) return
+
     setGuardando(true)
     try {
-      await api.post('/insumos/compras', {
-        fecha: fechaSeleccionada,
-        notas: nota,
-        detalle,
-      })
+      await api.post('/insumos/compras', { fecha: fechaSeleccionada, notas: nota, detalle })
       setConfirmacion({
         total: totalCompra,
         numItems: detalle.length,
         hora: new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
       })
       setTimeout(() => setConfirmacion(null), 3000)
-      await resetearFilas()
+      setSeleccionados({})
+      setFilas({})
+      setExtras([])
+      setNota('')
       await cargarComprasDelDia(fechaSeleccionada)
     } catch (e) {
       setMsg('Error: ' + (e?.response?.data?.detail ?? e.message))
@@ -179,12 +262,12 @@ export default function Insumos() {
     ? `Compras registradas hoy (${comprasHoy.length})`
     : `Compras del ${formatearFechaLarga(fechaSeleccionada)} (${comprasHoy.length})`
 
+  // ── Render ────────────────────────────────────────────────────────────────
+
   return (
     <div className="insumos-page">
       <div className="insumos-header">
-        <h2>
-          Compra de insumos — {formatearFechaLarga(fechaSeleccionada)}
-        </h2>
+        <h2>Compra de insumos — {formatearFechaLarga(fechaSeleccionada)}</h2>
         <DatePicker
           modo="single"
           fecha={fechaSeleccionada}
@@ -210,250 +293,196 @@ export default function Insumos() {
         </div>
       )}
 
-      {esMobil ? (
-        <div className="insumos-cards">
-          {filas.map((fila, i) => (
-            <div key={fila.id ?? `extra-${i}`} className="insumo-card">
-              <div className="insumo-card-header">
-                <div className="insumo-card-nombre">
-                  {fila.editandoNombre ? (
-                    <input
-                      className="nombre-editando"
-                      autoFocus
-                      value={fila.nombre}
-                      onChange={e => actualizarFila(i, 'nombre', e.target.value)}
-                      onBlur={e => actualizarNombre(i, e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && actualizarNombre(i, fila.nombre)}
-                    />
-                  ) : fila.esExtra ? (
-                    <input
-                      className="insumo-nombre-input"
-                      value={fila.nombre}
-                      onChange={e => actualizarFila(i, 'nombre', e.target.value)}
-                      placeholder="Nombre del insumo"
-                    />
-                  ) : (
-                    <span
-                      className="insumo-card-nombre-texto"
-                      onClick={() => toggleEditar(i)}
-                    >
-                      {fila.nombre}
-                    </span>
-                  )}
-                </div>
-                <div className="insumo-card-header-actions">
-                  <button
-                    className={`btn-modo-fila-card ${fila.modoSimple ? 'modo-simple' : 'modo-detallado'}`}
-                    onClick={() => toggleModoFila(i)}
-                    title={fila.modoSimple ? 'Modo simple' : 'Modo detallado'}
-                  >
-                    {fila.modoSimple ? '💰' : '📊'}
-                  </button>
-                  <button
-                    className="btn-eliminar-fila"
-                    onClick={() => eliminarFila(i)}
-                  >
-                    ×
-                  </button>
-                </div>
-              </div>
-              <div className="insumo-card-body">
-                {fila.modoSimple ? (
-                  <div className="insumo-card-campo">
-                    <label>Total pagado</label>
-                    <input
-                      className="insumo-num-input insumo-total-directo"
-                      type="number"
-                      min="0"
-                      step="1000"
-                      value={fila.totalDirecto}
-                      onChange={e => actualizarTotalDirecto(i, e.target.value)}
-                      placeholder="0"
-                    />
-                  </div>
-                ) : (
-                  <div className="insumo-card-campos-row">
-                    <div className="insumo-card-campo">
-                      <label>Cantidad</label>
-                      <input
-                        className="insumo-num-input"
-                        type="number"
-                        min="0"
-                        step="0.5"
-                        value={fila.cantidad}
-                        onChange={e => actualizarFila(i, 'cantidad', e.target.value)}
-                        placeholder="0"
-                      />
-                    </div>
-                    <div className="insumo-card-campo insumo-card-campo-unidad">
-                      <label>Unidad</label>
-                      <select
-                        className="insumo-unidad-select"
-                        value={fila.unidad}
-                        onChange={e => actualizarFila(i, 'unidad', e.target.value)}
-                      >
-                        {UNIDADES.map(u => <option key={u}>{u}</option>)}
-                      </select>
-                    </div>
-                    <div className="insumo-card-campo">
-                      <label>Valor unit.</label>
-                      <input
-                        className="insumo-num-input insumo-precio"
-                        type="number"
-                        min="0"
-                        step="500"
-                        value={fila.valorUnit}
-                        onChange={e => actualizarFila(i, 'valorUnit', e.target.value)}
-                        placeholder="0"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="insumo-card-footer">
-                <span className="insumo-card-subtotal-label">Subtotal</span>
-                <span className="insumo-card-subtotal-valor">
-                  {fila.subtotal > 0 ? formatCOP(fila.subtotal) : '—'}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="insumos-tabla-wrapper">
-        <table className="insumos-tabla">
-          <colgroup>
-            <col style={{ width: 32 }} />
-            <col />
-            <col style={{ width: 90 }} />
-            <col style={{ width: 80 }} className="col-unidad" />
-            <col style={{ width: 110 }} />
-            <col style={{ width: 110 }} />
-            <col style={{ width: 64 }} />
-          </colgroup>
-          <thead>
-            <tr>
-              <th></th>
-              <th>Insumo</th>
-              <th>Cantidad</th>
-              <th className="th-unidad">Unidad</th>
-              <th>Valor unit.</th>
-              <th style={{ textAlign: 'right' }}>Subtotal</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {filas.map((fila, i) => (
-              <tr key={fila.id ?? `extra-${i}`}>
-                <td style={{ padding: '8px 4px' }}>
-                  <button
-                    className={`btn-modo-fila ${fila.modoSimple ? 'modo-simple' : 'modo-detallado'}`}
-                    onClick={() => toggleModoFila(i)}
-                    title={fila.modoSimple ? 'Modo simple: solo total' : 'Modo detallado: cantidad × valor'}
-                  >
-                    {fila.modoSimple ? '💰' : '📊'}
-                  </button>
-                </td>
-                <td className="insumo-nombre-celda">
-                  {fila.editandoNombre ? (
-                    <input
-                      className="nombre-editando"
-                      autoFocus
-                      value={fila.nombre}
-                      onChange={e => actualizarFila(i, 'nombre', e.target.value)}
-                      onBlur={e => actualizarNombre(i, e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && actualizarNombre(i, fila.nombre)}
-                    />
-                  ) : fila.esExtra ? (
-                    <input
-                      className="insumo-nombre-input"
-                      value={fila.nombre}
-                      onChange={e => actualizarFila(i, 'nombre', e.target.value)}
-                      placeholder="Nombre del insumo"
-                    />
-                  ) : (
-                    <span>{fila.nombre}</span>
-                  )}
-                </td>
-                {fila.modoSimple ? (
-                  <td colSpan={3}>
-                    <input
-                      className="insumo-num-input insumo-total-directo"
-                      type="number"
-                      min="0"
-                      step="1000"
-                      value={fila.totalDirecto}
-                      onChange={e => actualizarTotalDirecto(i, e.target.value)}
-                      placeholder="$ Total pagado"
-                    />
-                  </td>
-                ) : (
-                  <>
-                    <td>
-                      <input
-                        className="insumo-num-input"
-                        type="number"
-                        min="0"
-                        step="0.5"
-                        value={fila.cantidad}
-                        onChange={e => actualizarFila(i, 'cantidad', e.target.value)}
-                        placeholder="0"
-                      />
-                    </td>
-                    <td>
-                      <select
-                        className="insumo-unidad-select"
-                        value={fila.unidad}
-                        onChange={e => actualizarFila(i, 'unidad', e.target.value)}
-                      >
-                        {UNIDADES.map(u => <option key={u}>{u}</option>)}
-                      </select>
-                    </td>
-                    <td>
-                      <input
-                        className="insumo-num-input insumo-precio"
-                        type="number"
-                        min="0"
-                        step="500"
-                        value={fila.valorUnit}
-                        onChange={e => actualizarFila(i, 'valorUnit', e.target.value)}
-                        placeholder="$ 0"
-                      />
-                    </td>
-                  </>
-                )}
-                <td className="insumo-subtotal">
-                  {fila.subtotal > 0 ? formatCOP(fila.subtotal) : '—'}
-                </td>
-                <td>
-                  <div className="fila-actions">
-                    <button
-                      className="btn-editar-fila"
-                      onClick={() => toggleEditar(i)}
-                      title="Editar nombre"
-                    >
-                      {fila.editandoNombre ? '✓' : '✏️'}
-                    </button>
-                    <button
-                      className="btn-eliminar-fila"
-                      onClick={() => eliminarFila(i)}
-                      title="Eliminar fila"
-                    >
-                      ×
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        </div>
+      {/* ── Chips grid ─────────────────────────────────────────────────────── */}
+      <div className="insumos-chips-titulo">Toca los insumos que vas a comprar hoy</div>
+      <div className="insumos-chips-grid">
+        {catalogo.map(ins => (
+          <button
+            key={ins.id}
+            className={`insumo-chip ${seleccionados[ins.id] ? 'chip-seleccionado' : 'chip-disponible'}`}
+            onClick={() => seleccionarChip(ins)}
+          >
+            {seleccionados[ins.id] && <span className="chip-check">✓</span>}
+            {ins.nombre}
+          </button>
+        ))}
+        <button className="insumo-chip chip-extra" onClick={agregarExtra}>
+          + Agregar otro
+        </button>
+      </div>
+
+      {/* ── Tarjetas detalle de catálogo ────────────────────────────────────── */}
+      {Object.keys(seleccionados).length > 0 && (
+        <div className="insumos-detalle-titulo">Ingresa cantidades y valores</div>
       )}
 
-      <button className="btn-agregar-extra" onClick={agregarExtra}>
-        + Agregar insumo
-      </button>
+      {catalogo
+        .filter(ins => seleccionados[ins.id])
+        .map(ins => {
+          const f = filas[ins.id] || {}
+          return (
+            <div key={ins.id} className="insumo-detalle-card">
+              <div className="insumo-detalle-header">
+                <span className="insumo-detalle-nombre">✓ {ins.nombre}</span>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    className={`btn-modo-mini${f.modoSimple ? ' modo-simple' : ''}`}
+                    onClick={() => toggleModoFila(ins.id)}
+                    title={f.modoSimple ? 'Modo detallado' : 'Modo simple'}
+                  >{f.modoSimple ? '💰' : '📊'}</button>
+                  <button className="btn-quitar-insumo" onClick={() => quitarSeleccionado(ins.id)}>×</button>
+                </div>
+              </div>
 
+              {f.modoSimple ? (
+                <div className="insumo-campo-grupo">
+                  <label>Total pagado</label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    className="insumo-input-grande gold"
+                    value={f.totalDirectoDisplay || ''}
+                    onChange={e => {
+                      const raw = e.target.value.replace(/\./g, '').replace(/\D/g, '')
+                      actualizarTotalDirecto(ins.id, raw)
+                    }}
+                    placeholder="$ 0"
+                  />
+                </div>
+              ) : (
+                <div className="insumo-campos-detalle">
+                  <div className="insumo-campo-grupo">
+                    <label>Cantidad</label>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      className="insumo-input-grande"
+                      value={f.cantidad || ''}
+                      onChange={e => actualizarCantidadFila(ins.id, e.target.value)}
+                      placeholder="0"
+                      min="0"
+                      step="0.5"
+                    />
+                  </div>
+                  <div className="insumo-campo-grupo">
+                    <label>Unidad</label>
+                    <select
+                      className="insumo-select"
+                      value={f.unidad || ins.unidad}
+                      onChange={e => actualizarUnidadFila(ins.id, e.target.value)}
+                    >
+                      {UNIDADES.map(u => <option key={u}>{u}</option>)}
+                    </select>
+                  </div>
+                  <div className="insumo-campo-grupo">
+                    <label>Valor unitario</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      className="insumo-input-grande gold"
+                      value={f.valorUnitDisplay || ''}
+                      onChange={e => {
+                        const raw = e.target.value.replace(/\./g, '').replace(/\D/g, '')
+                        actualizarValorUnit(ins.id, raw)
+                      }}
+                      placeholder="$ 0"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="insumo-subtotal-row">
+                <span>Subtotal</span>
+                <span className="insumo-subtotal-val">{f.subtotal > 0 ? formatMiles(f.subtotal) : '—'}</span>
+              </div>
+            </div>
+          )
+        })}
+
+      {/* ── Extras ───────────────────────────────────────────────────────────── */}
+      {extras.map((ex, i) => (
+        <div key={`ex-${i}`} className="insumo-detalle-card insumo-card-extra">
+          <div className="insumo-detalle-header">
+            <input
+              className="insumo-nombre-extra"
+              value={ex.nombre}
+              onChange={e => actualizarExtra(i, { nombre: e.target.value })}
+              placeholder="Nombre del insumo"
+            />
+            <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+              <button
+                className={`btn-modo-mini${ex.modoSimple ? ' modo-simple' : ''}`}
+                onClick={() => toggleModoExtra(i)}
+              >{ex.modoSimple ? '💰' : '📊'}</button>
+              <button className="btn-quitar-insumo" onClick={() => quitarExtra(i)}>×</button>
+            </div>
+          </div>
+
+          {ex.modoSimple ? (
+            <div className="insumo-campo-grupo">
+              <label>Total pagado</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                className="insumo-input-grande gold"
+                value={ex.totalDirectoDisplay || ''}
+                onChange={e => {
+                  const raw = e.target.value.replace(/\./g, '').replace(/\D/g, '')
+                  actualizarExtraTotalDirecto(i, raw)
+                }}
+                placeholder="$ 0"
+              />
+            </div>
+          ) : (
+            <div className="insumo-campos-detalle">
+              <div className="insumo-campo-grupo">
+                <label>Cantidad</label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  className="insumo-input-grande"
+                  value={ex.cantidad || ''}
+                  onChange={e => actualizarExtraCantidad(i, e.target.value)}
+                  placeholder="0"
+                  min="0"
+                  step="0.5"
+                />
+              </div>
+              <div className="insumo-campo-grupo">
+                <label>Unidad</label>
+                <select
+                  className="insumo-select"
+                  value={ex.unidad}
+                  onChange={e => actualizarExtra(i, { unidad: e.target.value })}
+                >
+                  {UNIDADES.map(u => <option key={u}>{u}</option>)}
+                </select>
+              </div>
+              <div className="insumo-campo-grupo">
+                <label>Valor unitario</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  className="insumo-input-grande gold"
+                  value={ex.valorUnitDisplay || ''}
+                  onChange={e => {
+                    const raw = e.target.value.replace(/\./g, '').replace(/\D/g, '')
+                    actualizarExtraValorUnit(i, raw)
+                  }}
+                  placeholder="$ 0"
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="insumo-subtotal-row">
+            <span>Subtotal</span>
+            <span className="insumo-subtotal-val">{ex.subtotal > 0 ? formatMiles(ex.subtotal) : '—'}</span>
+          </div>
+        </div>
+      ))}
+
+      {/* ── Nota ─────────────────────────────────────────────────────────────── */}
       <div className="insumo-nota-row">
         <input
           className="insumo-nota-input"
@@ -463,6 +492,7 @@ export default function Insumos() {
         />
       </div>
 
+      {/* ── Footer total ────────────────────────────────────────────────────── */}
       <div className="insumos-footer">
         <div className="insumos-total-label">TOTAL COMPRA</div>
         <div className="insumos-total-valor">{formatCOP(totalCompra)}</div>
@@ -475,7 +505,7 @@ export default function Insumos() {
         </button>
       </div>
 
-      {/* ── Historial del día ── */}
+      {/* ── Historial del día ────────────────────────────────────────────────── */}
       <div className="compras-historial">
         {comprasHoy.length > 0 ? (
           <>
@@ -510,8 +540,7 @@ export default function Insumos() {
           <p className="compras-sin-datos">
             {fechaSeleccionada === hoy
               ? 'No hay compras registradas hoy'
-              : `No hay compras para el ${formatearFechaLarga(fechaSeleccionada)}`
-            }
+              : `No hay compras para el ${formatearFechaLarga(fechaSeleccionada)}`}
           </p>
         )}
       </div>
