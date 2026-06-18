@@ -1,8 +1,10 @@
 import { useEffect, useRef } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import usePOSStore from './store/usePOSStore'
 import TopBar from './components/TopBar'
 import StatusBar from './components/StatusBar'
+import RutaProtegida from './components/RutaProtegida'
+import Login from './pages/Login'
 import Venta from './pages/Venta'
 import Reportes from './pages/Reportes'
 import Admin from './pages/Admin'
@@ -59,11 +61,39 @@ export default function App() {
         <TopBar />
         <div className="routes-content">
           <Routes>
-            <Route path="/" element={<Venta />} />
-            <Route path="/reportes" element={<Reportes />} />
-            <Route path="/insumos" element={<Insumos />} />
-            <Route path="/nomina" element={<Nomina />} />
-            <Route path="/admin" element={<Admin />} />
+            <Route path="/login" element={<Login />} />
+
+            <Route path="/ventas" element={
+              <RutaProtegida>
+                <Venta />
+              </RutaProtegida>
+            } />
+
+            <Route path="/reportes" element={
+              <RutaProtegida soloAdmin>
+                <Reportes />
+              </RutaProtegida>
+            } />
+
+            <Route path="/insumos" element={
+              <RutaProtegida soloAdmin>
+                <Insumos />
+              </RutaProtegida>
+            } />
+
+            <Route path="/nomina" element={
+              <RutaProtegida soloAdmin>
+                <Nomina />
+              </RutaProtegida>
+            } />
+
+            <Route path="/admin" element={
+              <RutaProtegida soloAdmin>
+                <Admin />
+              </RutaProtegida>
+            } />
+
+            <Route path="/" element={<Navigate to="/ventas" replace />} />
           </Routes>
         </div>
         <StatusBar />
