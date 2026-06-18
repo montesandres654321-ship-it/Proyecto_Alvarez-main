@@ -114,7 +114,7 @@ export default function Venta() {
 
   const handleCobrar = async (metodo, tipo, montoRecibido = 0, clienteFinal = '', totalVenta = 0) => {
     const telefono      = slot?.telefono ?? ''
-    const nombreCliente = clienteFinal || slot?.nombre ?? ''
+    const nombreCliente = clienteFinal || (slot?.nombre ?? '')
     const factura = await cobrar(mesaActual, metodo, tipo, telefono, montoRecibido, nombreCliente)
     if (metodo === 'Crédito' && factura?.id_factura) {
       try {
