@@ -23,29 +23,22 @@ _CLAVES_PERMITIDAS = {
 _CLAVES_PUBLICAS = {"nequi_numero", "nombre_restaurante", "num_mesas"}
 
 
-# ── GET /configuracion/ — lista completa (requiere PIN) ───────────────────
-@router.get("/", response_model=dict[str, str], dependencies=[Depends(verify_pin)])
+# ── GET /configuracion/ — lista completa ─────────────────────────────────
+@router.get("/", response_model=dict[str, str])
 def listar_todas():
     return {clave: get_config(clave) for clave in sorted(_CLAVES_PERMITIDAS)}
 
 
 # ── GET /configuracion/{clave} — lectura individual ───────────────────────
-# Las claves sensibles (pin_admin, prefijo_factura, domicilio_mensaje) requieren PIN.
-# Las claves públicas (nequi_numero, nombre_restaurante, num_mesas) no lo requieren.
 @router.get("/{clave}", response_model=ConfigValor)
-def obtener(clave: str, request: Request):
+def obtener(clave: str):
     if clave not in _CLAVES_PERMITIDAS:
         raise HTTPException(status_code=404, detail=f"Clave '{clave}' no reconocida")
-    if clave not in _CLAVES_PUBLICAS:
-        pin = request.headers.get("X-PIN", "")
-        pin_real = get_config("pin_admin") or "1234"
-        if pin != pin_real:
-            raise HTTPException(status_code=401, detail="PIN requerido (header X-PIN)")
     return ConfigValor(valor=get_config(clave))
 
 
-# ── PUT /configuracion/{clave} — escritura (siempre requiere PIN) ─────────
-@router.put("/{clave}", response_model=MensajeOk, dependencies=[Depends(verify_pin)])
+# ── PUT /configuracion/{clave} — escritura ────────────────────────────────
+@router.put("/{clave}", response_model=MensajeOk)
 def actualizar(clave: str, body: ConfigValor):
     if clave not in _CLAVES_PERMITIDAS:
         raise HTTPException(status_code=404, detail=f"Clave '{clave}' no reconocida")

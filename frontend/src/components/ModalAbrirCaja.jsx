@@ -1,17 +1,16 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import api, { setPinHeader } from '../api/client'
+import api from '../api/client'
 import usePOSStore from '../store/usePOSStore'
 import './ModalAbrirCaja.css'
 
 export default function ModalAbrirCaja({ onAbierta }) {
   const navigate = useNavigate()
-  const { rol, pinSesion } = usePOSStore()
+  const { rol } = usePOSStore()
   const esCajero = rol === 'cajero'
 
   const [cajero, setCajero]     = useState('')
   const [efectivo, setEfectivo] = useState('')
-  const [pin, setPin]           = useState('')
   const [cargando, setCargando] = useState(false)
   const [error, setError]       = useState('')
   const cajeroRef = useRef(null)
@@ -28,31 +27,16 @@ export default function ModalAbrirCaja({ onAbierta }) {
       return
     }
 
-    // Cajero usa el PIN guardado en sesión; admin ingresa el PIN manualmente
-    const pinUsado = esCajero ? (pinSesion || '') : pin
-
-    if (!esCajero && pinUsado.length < 4) {
-      setError('Ingresa el PIN de 4 dígitos')
-      return
-    }
-
     setCargando(true)
     setError('')
     try {
-      const res = await api.post(
-        '/turnos/abrir',
-        { cajero: cajero.trim(), efectivo_inicial: monto },
-        { headers: { 'X-PIN': pinUsado } }
-      )
-      if (!esCajero) setPinHeader(pinUsado)
+      const res = await api.post('/turnos/abrir', {
+        cajero: cajero.trim(),
+        efectivo_inicial: monto,
+      })
       onAbierta(res.data)
     } catch (e) {
-      const status = e?.response?.status
-      if (status === 401 || status === 403) {
-        setError('PIN incorrecto')
-      } else {
-        setError(e?.response?.data?.detail ?? 'Error al abrir la caja')
-      }
+      setError(e?.response?.data?.detail ?? 'Error al abrir la caja')
       setCargando(false)
     }
   }
@@ -95,25 +79,6 @@ export default function ModalAbrirCaja({ onAbierta }) {
             />
             <div className="caja-note">Este monto se usara para calcular vueltos</div>
           </div>
-
-          {!esCajero && (
-            <div className="caja-field">
-              <label className="caja-label">PIN ADMINISTRADOR</label>
-              <input
-                className="caja-pin-input"
-                type="password"
-                inputMode="numeric"
-                maxLength={4}
-                placeholder="••••"
-                value={pin}
-                onChange={(e) => {
-                  setPin(e.target.value.replace(/\D/g, '').slice(0, 4))
-                  setError('')
-                }}
-                onKeyDown={(e) => e.key === 'Enter' && abrir()}
-              />
-            </div>
-          )}
 
           {error && <p className="caja-error">{error}</p>}
         </div>

@@ -24,7 +24,7 @@ from backend.schemas import (
 )
 from backend.dependencies import verify_pin
 
-router = APIRouter(prefix="/reportes", tags=["reportes"], dependencies=[Depends(verify_pin)])
+router = APIRouter(prefix="/reportes", tags=["reportes"])
 
 
 @router.get("/cuadre", response_model=CuadreCajaOut)
@@ -97,7 +97,7 @@ def ventas_reporte(
     ]
 
 
-@router.delete("/ventas/{id_factura}")
+@router.delete("/ventas/{id_factura}", dependencies=[Depends(verify_pin)])
 def anular_venta_endpoint(id_factura: str):
     """Anula una venta (la marca como anulada, no la elimina)."""
     try:

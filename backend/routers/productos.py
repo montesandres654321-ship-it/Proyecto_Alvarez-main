@@ -50,7 +50,7 @@ def obtener(producto_id: str):
     return _to_out(p)
 
 
-@router.post("/", response_model=ProductoOut, status_code=status.HTTP_201_CREATED, dependencies=[Depends(verify_pin)])
+@router.post("/", response_model=ProductoOut, status_code=status.HTTP_201_CREATED)
 def crear(body: ProductoIn):
     try:
         pid = crear_producto(
@@ -67,7 +67,7 @@ def crear(body: ProductoIn):
     return _to_out(p)
 
 
-@router.put("/{producto_id}", response_model=MensajeOk, dependencies=[Depends(verify_pin)])
+@router.put("/{producto_id}", response_model=MensajeOk)
 def actualizar(producto_id: str, body: ProductoUpdate):
     try:
         actualizar_producto(
@@ -82,7 +82,7 @@ def actualizar(producto_id: str, body: ProductoUpdate):
     return MensajeOk(mensaje="Producto actualizado")
 
 
-@router.delete("/{producto_id}", response_model=MensajeOk, dependencies=[Depends(verify_pin)])
+@router.delete("/{producto_id}", response_model=MensajeOk)
 def eliminar(producto_id: str):
     """Desactiva el producto (activo=0). No lo borra de la BD."""
     try:
@@ -92,7 +92,7 @@ def eliminar(producto_id: str):
     return MensajeOk(mensaje="Producto desactivado")
 
 
-@router.patch("/{producto_id}/toggle", response_model=MensajeOk, dependencies=[Depends(verify_pin)])
+@router.patch("/{producto_id}/toggle", response_model=MensajeOk)
 def toggle_activo(producto_id: str):
     try:
         nuevo_estado = toggle_activo_producto(producto_id)

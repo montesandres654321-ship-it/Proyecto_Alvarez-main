@@ -37,7 +37,7 @@ class InsumoIn(BaseModel):
     precio_ref: int = 0
 
 
-@router.post("/catalogo", dependencies=[Depends(verify_pin)])
+@router.post("/catalogo")
 def crear_insumo(body: InsumoIn):
     with persistencia.conexion() as conn:
         with conn.cursor() as cur:
@@ -63,7 +63,7 @@ class InsumoUpdate(BaseModel):
     activo: Optional[int] = None
 
 
-@router.put("/catalogo/{insumo_id}", dependencies=[Depends(verify_pin)])
+@router.put("/catalogo/{insumo_id}")
 def actualizar_insumo(insumo_id: int, body: InsumoUpdate):
     sets = []
     params = []
@@ -84,7 +84,7 @@ def actualizar_insumo(insumo_id: int, body: InsumoUpdate):
     return {"ok": True}
 
 
-@router.delete("/catalogo/{insumo_id}", dependencies=[Depends(verify_pin)])
+@router.delete("/catalogo/{insumo_id}")
 def desactivar_insumo(insumo_id: int):
     with persistencia.conexion() as conn:
         with conn.cursor() as cur:
@@ -111,7 +111,7 @@ class CompraIn(BaseModel):
     detalle: List[DetalleCompra]
 
 
-@router.post("/compras", dependencies=[Depends(verify_pin)])
+@router.post("/compras")
 def registrar_compra(body: CompraIn):
     if not body.detalle:
         raise HTTPException(status_code=400, detail="El detalle no puede estar vacío")
@@ -174,7 +174,7 @@ def listar_compras(fecha: str = None):
             return result
 
 
-@router.get("/resumen", dependencies=[Depends(verify_pin)])
+@router.get("/resumen")
 def resumen_gastos_ventas(desde: str, hasta: str):
     from datetime import date as _date, timedelta
     try:

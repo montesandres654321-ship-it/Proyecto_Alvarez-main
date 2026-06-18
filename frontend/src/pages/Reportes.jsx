@@ -1141,5 +1141,5 @@ function ReportesContenido() {
 }
 
 export default function Reportes() {
-  return <PinGuard><ReportesContenido /></PinGuard>
+  return <ReportesContenido />
 }

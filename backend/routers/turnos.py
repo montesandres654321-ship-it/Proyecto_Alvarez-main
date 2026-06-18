@@ -25,7 +25,7 @@ def obtener_activo():
     return turno  # puede ser None → JSON null
 
 
-@router.post("/abrir", dependencies=[Depends(verify_pin_o_cajero)])
+@router.post("/abrir")
 def abrir(body: AbrirTurnoIn):
     try:
         turno_id = abrir_turno(body.cajero, body.efectivo_inicial)
@@ -34,7 +34,7 @@ def abrir(body: AbrirTurnoIn):
     return {"id": turno_id, "cajero": body.cajero, "efectivo_inicial": body.efectivo_inicial, "estado": "abierto"}
 
 
-@router.post("/{turno_id}/cerrar", dependencies=[Depends(verify_pin)])
+@router.post("/{turno_id}/cerrar")
 def cerrar(turno_id: int):
     try:
         resumen = cerrar_turno(turno_id)

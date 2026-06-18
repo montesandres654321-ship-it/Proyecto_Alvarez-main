@@ -64,7 +64,7 @@ class TrabajadorIn(BaseModel):
     recargo_festivo: float = 1.0
 
 
-@router.post("/trabajadores", dependencies=[Depends(verify_pin)])
+@router.post("/trabajadores")
 def crear_trabajador(body: TrabajadorIn):
     with persistencia.conexion() as conn:
         with conn.cursor() as cur:
@@ -90,7 +90,7 @@ class TrabajadorUpdate(BaseModel):
     activo: Optional[int] = None
 
 
-@router.put("/trabajadores/{tid}", dependencies=[Depends(verify_pin)])
+@router.put("/trabajadores/{tid}")
 def actualizar_trabajador(tid: int, body: TrabajadorUpdate):
     sets, params = [], []
     if body.nombre is not None:
@@ -112,7 +112,7 @@ def actualizar_trabajador(tid: int, body: TrabajadorUpdate):
     return {"ok": True}
 
 
-@router.delete("/trabajadores/{tid}", dependencies=[Depends(verify_pin)])
+@router.delete("/trabajadores/{tid}")
 def desactivar_trabajador(tid: int):
     with persistencia.conexion() as conn:
         with conn.cursor() as cur:
@@ -178,7 +178,7 @@ class NominaIn(BaseModel):
     estado: str = "borrador"
 
 
-@router.post("/registrar", dependencies=[Depends(verify_pin)])
+@router.post("/registrar")
 def registrar_nomina(body: NominaIn):
     if not body.detalle:
         raise HTTPException(status_code=400, detail="El detalle no puede estar vacío")
@@ -283,7 +283,7 @@ def registrar_nomina(body: NominaIn):
     return {"id": nomina_id, "total": total_nomina, "num_trabajadores": len(detalles_calc)}
 
 
-@router.post("/{nomina_id}/pagar", dependencies=[Depends(verify_pin)])
+@router.post("/{nomina_id}/pagar")
 def pagar_nomina(nomina_id: int):
     ahora = datetime.now()
     with persistencia.conexion() as conn:
@@ -333,7 +333,7 @@ def historial_nominas(limite: int = 10):
             return result
 
 
-@router.get("/resumen", dependencies=[Depends(verify_pin)])
+@router.get("/resumen")
 def resumen_nomina(desde: str, hasta: str):
     with persistencia.conexion() as conn:
         with conn.cursor() as cur:

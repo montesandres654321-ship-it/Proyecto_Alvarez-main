@@ -760,5 +760,5 @@ function ConfigField({ label, valor, tipo = 'text', onGuardar }) {
 }
 
 export default function Admin() {
-  return <PinGuard><AdminContenido /></PinGuard>
+  return <AdminContenido />
 }

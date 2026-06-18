@@ -38,8 +38,7 @@ def listar(categoria: str | None = None):
     ]
 
 
-@router.post("/", response_model=PreparacionOut, status_code=status.HTTP_201_CREATED,
-             dependencies=[Depends(verify_pin)])
+@router.post("/", response_model=PreparacionOut, status_code=status.HTTP_201_CREATED)
 def crear(body: PreparacionIn):
     try:
         nuevo_id = crear_preparacion(body.categoria, body.opcion)
@@ -54,7 +53,7 @@ def crear(body: PreparacionIn):
     )
 
 
-@router.delete("/{prep_id}", response_model=MensajeOk, dependencies=[Depends(verify_pin)])
+@router.delete("/{prep_id}", response_model=MensajeOk)
 def eliminar(prep_id: int):
     try:
         desactivar_preparacion(prep_id)
