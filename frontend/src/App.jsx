@@ -55,10 +55,18 @@ export default function App() {
   const { cargarConfig, rol, pinSesion } = usePOSStore()
   useEffect(() => {
     cargarConfig()
-    // Restaurar PIN en el cliente axios si el admin recargó la página
     if (rol === 'admin' && pinSesion) {
       setPinHeader(pinSesion)
     }
+  }, [])
+
+  useEffect(() => {
+    history.pushState(null, '', location.href)
+    const handlePopState = () => {
+      history.pushState(null, '', location.href)
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
   }, [])
 
   return (
