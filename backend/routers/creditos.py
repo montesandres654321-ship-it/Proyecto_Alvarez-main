@@ -23,7 +23,8 @@ class PagoIn(BaseModel):
 
 
 # ── GET /creditos — pendientes (público) ──────────────────────────────────────
-@router.get("/")
+@router.get("")
+@router.get("/", include_in_schema=False)
 def listar_pendientes():
     try:
         with conexion() as conn:

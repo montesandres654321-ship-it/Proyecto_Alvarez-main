@@ -18,12 +18,16 @@ export default function Creditos() {
   const [modalPago, setModalPago]       = useState(null)
   const [totalPendiente, setTotalPendiente] = useState(0)
 
+  const toArray = (data) =>
+    Array.isArray(data) ? data : (data?.creditos ?? data?.data ?? data?.items ?? [])
+
   const cargarPendientes = async () => {
     setCargando(true)
     try {
       const res = await api.get('/creditos')
-      setCreditos(res.data)
-      const total = res.data.reduce((s, c) => s + (c.total_deuda - c.total_pagado), 0)
+      const lista = toArray(res.data)
+      setCreditos(lista)
+      const total = lista.reduce((s, c) => s + (c.total_deuda - c.total_pagado), 0)
       setTotalPendiente(total)
     } catch {}
     setCargando(false)
@@ -32,7 +36,7 @@ export default function Creditos() {
   const cargarPagados = async () => {
     try {
       const res = await api.get('/creditos/historial')
-      setPagados(res.data)
+      setPagados(toArray(res.data))
     } catch {}
   }
 
@@ -88,7 +92,7 @@ export default function Creditos() {
               </div>
             </div>
           ) : (
-            creditos.map(c => {
+            (creditos || []).map(c => {
               const saldo = c.total_deuda - c.total_pagado
               return (
                 <div key={c.id} className="credito-card-full">
@@ -137,7 +141,7 @@ export default function Creditos() {
               <div style={{ color: 'var(--text-muted)' }}>No hay créditos pagados aún</div>
             </div>
           ) : (
-            pagados.map(c => (
+            (pagados || []).map(c => (
               <div key={c.id} className="credito-card-full pagado">
                 <div className="credito-card-top">
                   <div>
