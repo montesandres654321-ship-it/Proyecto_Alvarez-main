@@ -448,6 +448,19 @@ def _crear_base_y_tablas() -> None:
         ON CONFLICT DO NOTHING
         """
       )
+      cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS borradores (
+          id         SERIAL      PRIMARY KEY,
+          usuario_id INTEGER     NOT NULL REFERENCES usuarios(id),
+          tipo       VARCHAR(20) NOT NULL
+            CHECK (tipo IN ('carrito','insumos','nomina')),
+          datos      JSONB       NOT NULL DEFAULT '{}',
+          updated_at TIMESTAMP   DEFAULT NOW(),
+          UNIQUE(usuario_id, tipo)
+        )
+        """
+      )
 
 
 def get_connection() -> "psycopg2.connection":
@@ -579,14 +592,15 @@ def set_config(clave: str, valor: str) -> None:
 def _migraciones() -> None:
   """Aplica migraciones de esquema idempotentes para bases existentes."""
   _alter = [
-    ("ventas",  "turno_id",         "ALTER TABLE ventas ADD COLUMN turno_id INT DEFAULT NULL"),
-    ("ventas",  "monto_recibido",   "ALTER TABLE ventas ADD COLUMN monto_recibido INT NOT NULL DEFAULT 0"),
-    ("ventas",  "vuelto_dado",      "ALTER TABLE ventas ADD COLUMN vuelto_dado INT NOT NULL DEFAULT 0"),
-    ("ventas",  "anulada",          "ALTER TABLE ventas ADD COLUMN anulada SMALLINT NOT NULL DEFAULT 0"),
-    ("ventas",  "motivo_anulacion", "ALTER TABLE ventas ADD COLUMN motivo_anulacion VARCHAR(200) DEFAULT NULL"),
-    ("turnos",  "anulado",          "ALTER TABLE turnos ADD COLUMN anulado SMALLINT NOT NULL DEFAULT 0"),
-    ("turnos",  "total_vueltos",    "ALTER TABLE turnos ADD COLUMN total_vueltos INT NOT NULL DEFAULT 0"),
-    ("turnos",  "efectivo_esperado","ALTER TABLE turnos ADD COLUMN efectivo_esperado INT NOT NULL DEFAULT 0"),
+    ("ventas",           "turno_id",         "ALTER TABLE ventas ADD COLUMN turno_id INT DEFAULT NULL"),
+    ("ventas",           "monto_recibido",   "ALTER TABLE ventas ADD COLUMN monto_recibido INT NOT NULL DEFAULT 0"),
+    ("ventas",           "vuelto_dado",      "ALTER TABLE ventas ADD COLUMN vuelto_dado INT NOT NULL DEFAULT 0"),
+    ("ventas",           "anulada",          "ALTER TABLE ventas ADD COLUMN anulada SMALLINT NOT NULL DEFAULT 0"),
+    ("ventas",           "motivo_anulacion", "ALTER TABLE ventas ADD COLUMN motivo_anulacion VARCHAR(200) DEFAULT NULL"),
+    ("turnos",           "anulado",          "ALTER TABLE turnos ADD COLUMN anulado SMALLINT NOT NULL DEFAULT 0"),
+    ("turnos",           "total_vueltos",    "ALTER TABLE turnos ADD COLUMN total_vueltos INT NOT NULL DEFAULT 0"),
+    ("turnos",           "efectivo_esperado","ALTER TABLE turnos ADD COLUMN efectivo_esperado INT NOT NULL DEFAULT 0"),
+    ("insumos_catalogo", "lugar_compra",     "ALTER TABLE insumos_catalogo ADD COLUMN lugar_compra VARCHAR(20) DEFAULT 'ambos'"),
   ]
   with conexion() as conn:
     with conn.cursor() as cur:
