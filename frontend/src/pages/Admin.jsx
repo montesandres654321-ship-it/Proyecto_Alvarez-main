@@ -43,6 +43,18 @@ function AdminContenido() {
     } catch {}
   }
 
+  // ── Categorías de gasto ──────────────────────────────────────────────────
+  const [catGasto, setCatGasto]       = useState([])
+  const [catGastoForm, setCatGastoForm] = useState(null)
+  const [catGastoSaving, setCatGastoSaving] = useState(false)
+
+  const cargarCatGasto = async () => {
+    try {
+      const res = await api.get('/gastos/categorias')
+      setCatGasto(res.data)
+    } catch {}
+  }
+
   // ── Usuarios ─────────────────────────────────────────────────────────────
   const [usuariosLista, setUsuariosLista]     = useState([])
   const [usuarioForm, setUsuarioForm]         = useState(null)
@@ -99,6 +111,7 @@ function AdminContenido() {
     cargarInsumos()
     cargarTrabajadores()
     cargarUsuarios()
+    cargarCatGasto()
   }, [])
 
   const flash = (m) => { setMsg(m); setTimeout(() => setMsg(''), 3000) }
@@ -219,6 +232,12 @@ function AdminContenido() {
           onClick={() => { setTab('usuarios'); cargarUsuarios(); cargarSesionesActivas() }}
         >
           Usuarios
+        </button>
+        <button
+          className={`admin-tab${tab === 'gastos' ? ' active' : ''}`}
+          onClick={() => { setTab('gastos'); cargarCatGasto() }}
+        >
+          💸 Gastos
         </button>
         <button
           className={`admin-tab${tab === 'config' ? ' active' : ''}`}
@@ -763,6 +782,145 @@ function AdminContenido() {
                 Sin trabajadores registrados
               </p>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── CATEGORÍAS DE GASTO ── */}
+      {tab === 'gastos' && (
+        <div className="admin-section">
+          <button
+            className="btn-nuevo-producto"
+            onClick={() => setCatGastoForm({ nombre: '', emoji: '💸' })}
+          >
+            + Nueva categoría
+          </button>
+
+          {catGastoForm !== null && (
+            <div className="form-producto">
+              <h3>{catGastoForm.id ? 'Editar categoría' : 'Nueva categoría'}</h3>
+              <div className="form-grid">
+                <label className="form-label">
+                  Emoji
+                  <input
+                    value={catGastoForm.emoji}
+                    onChange={e => setCatGastoForm({ ...catGastoForm, emoji: e.target.value })}
+                    placeholder="💸"
+                    style={{ width: 60 }}
+                  />
+                </label>
+                <label className="form-label">
+                  Nombre
+                  <input
+                    value={catGastoForm.nombre}
+                    onChange={e => setCatGastoForm({ ...catGastoForm, nombre: e.target.value })}
+                    placeholder="Ej: Arriendo"
+                    autoFocus
+                  />
+                </label>
+              </div>
+              <div className="form-acciones">
+                <button className="btn-form-cancel" onClick={() => setCatGastoForm(null)}>Cancelar</button>
+                <button
+                  className="btn-form-save"
+                  disabled={catGastoSaving || !catGastoForm.nombre.trim()}
+                  onClick={async () => {
+                    setCatGastoSaving(true)
+                    try {
+                      if (catGastoForm.id) {
+                        await api.put(`/gastos/categorias/${catGastoForm.id}`, {
+                          nombre: catGastoForm.nombre.trim(),
+                          emoji: catGastoForm.emoji || '💸',
+                        })
+                        flash('Categoría actualizada ✓')
+                      } else {
+                        await api.post('/gastos/categorias', {
+                          nombre: catGastoForm.nombre.trim(),
+                          emoji: catGastoForm.emoji || '💸',
+                        })
+                        flash('Categoría creada ✓')
+                      }
+                      setCatGastoForm(null)
+                      cargarCatGasto()
+                    } catch (e) {
+                      flash('Error: ' + (e?.response?.data?.detail ?? e.message))
+                    } finally {
+                      setCatGastoSaving(false)
+                    }
+                  }}
+                >
+                  {catGastoSaving ? 'Guardando…' : 'Guardar'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="admin-table-wrapper">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Emoji</th>
+                  <th>Nombre</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {catGasto.map(c => (
+                  <tr key={c.id}>
+                    <td style={{ fontSize: 20, textAlign: 'center' }}>{c.emoji}</td>
+                    <td>{c.nombre}</td>
+                    <td className="td-acciones">
+                      <button
+                        className="btn-edit"
+                        title="Editar"
+                        onClick={() => setCatGastoForm({ ...c })}
+                      >✏️</button>
+                      <button
+                        className="btn-edit"
+                        title="Eliminar"
+                        style={{ marginLeft: 4 }}
+                        onClick={async () => {
+                          try {
+                            await api.delete(`/gastos/categorias/${c.id}`)
+                            flash('Categoría eliminada ✓')
+                            cargarCatGasto()
+                          } catch (e) {
+                            flash('Error: ' + (e?.response?.data?.detail ?? e.message))
+                          }
+                        }}
+                      >🗑</button>
+                    </td>
+                  </tr>
+                ))}
+                {catGasto.length === 0 && (
+                  <tr><td colSpan={3} style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 20 }}>
+                    Sin categorías
+                  </td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="admin-cards-movil">
+            {catGasto.map(c => (
+              <div key={c.id} className="admin-card-item">
+                <div className="admin-card-header">
+                  <span className="admin-card-nombre">{c.emoji} {c.nombre}</span>
+                  <div className="admin-card-acciones">
+                    <button className="btn-edit" title="Editar" onClick={() => setCatGastoForm({ ...c })}>✏️</button>
+                    <button className="btn-edit" title="Eliminar" onClick={async () => {
+                      try {
+                        await api.delete(`/gastos/categorias/${c.id}`)
+                        flash('Categoría eliminada ✓')
+                        cargarCatGasto()
+                      } catch (e) {
+                        flash('Error: ' + (e?.response?.data?.detail ?? e.message))
+                      }
+                    }}>🗑</button>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

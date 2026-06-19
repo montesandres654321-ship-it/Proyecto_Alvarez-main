@@ -47,6 +47,9 @@ export default function TopBar() {
               <NavLink to="/insumos" className={({ isActive }) => `topbar-link insumos-link${isActive ? ' active' : ''}`}>
                 🛒 Insumos
               </NavLink>
+              <NavLink to="/gastos" className={({ isActive }) => `topbar-link${isActive ? ' active' : ''}`}>
+                💸 Gastos
+              </NavLink>
               <NavLink to="/nomina" className={({ isActive }) => `topbar-link${isActive ? ' active' : ''}`}>
                 👥 Nómina
               </NavLink>

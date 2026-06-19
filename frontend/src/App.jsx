@@ -12,6 +12,7 @@ import Admin from './pages/Admin'
 import Insumos from './pages/Insumos'
 import Nomina from './pages/Nomina'
 import Creditos from './pages/Creditos'
+import Gastos from './pages/Gastos'
 import './App.css'
 
 function WSManager() {
@@ -129,6 +130,12 @@ function AppInner() {
             <Route path="/reportes" element={
               <RutaProtegida soloAdmin>
                 <Reportes />
+              </RutaProtegida>
+            } />
+
+            <Route path="/gastos" element={
+              <RutaProtegida soloAdmin>
+                <Gastos />
               </RutaProtegida>
             } />
 
