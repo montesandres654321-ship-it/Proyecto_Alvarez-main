@@ -561,6 +561,7 @@ function AdminContenido() {
                   <th>Nombre</th>
                   <th>Unidad</th>
                   <th>Precio ref.</th>
+                  <th>Lugar</th>
                   <th></th>
                 </tr>
               </thead>
@@ -573,6 +574,20 @@ function AdminContenido() {
                       {ins.precio_ref > 0
                         ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(ins.precio_ref)
                         : '—'}
+                    </td>
+                    <td>
+                      <select
+                        className="lugar-select"
+                        value={ins.lugar_compra || 'ambos'}
+                        onChange={async (e) => {
+                          await api.put(`/insumos/catalogo/${ins.id}`, { lugar_compra: e.target.value })
+                          cargarInsumos()
+                        }}
+                      >
+                        <option value="sincelejo">🔵 Sincelejo</option>
+                        <option value="sampues">🟣 Sampués</option>
+                        <option value="ambos">🟢 Ambos</option>
+                      </select>
                     </td>
                     <td className="td-acciones">
                       <button
@@ -610,6 +625,11 @@ function AdminContenido() {
                 </div>
                 <div className="admin-card-detalles">
                   <span className="admin-card-categoria">{ins.unidad}</span>
+                  <span className={`lugar-badge lugar-badge-${ins.lugar_compra || 'ambos'}`}>
+                    {ins.lugar_compra === 'sincelejo' ? '🔵 Sincelejo'
+                      : ins.lugar_compra === 'sampues' ? '🟣 Sampués'
+                      : '🟢 Ambos'}
+                  </span>
                   <span className="admin-card-precio">
                     {ins.precio_ref > 0
                       ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(ins.precio_ref)

@@ -22,7 +22,8 @@ def listar_catalogo():
         with conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT id, nombre, unidad, precio_ref, activo, orden
+                SELECT id, nombre, unidad, precio_ref, activo, orden,
+                       COALESCE(lugar_compra, 'ambos') AS lugar_compra
                 FROM insumos_catalogo
                 WHERE activo = 1
                 ORDER BY orden, nombre
@@ -61,6 +62,7 @@ class InsumoUpdate(BaseModel):
     unidad: Optional[str] = None
     precio_ref: Optional[int] = None
     activo: Optional[int] = None
+    lugar_compra: Optional[str] = None
 
 
 @router.put("/catalogo/{insumo_id}")
@@ -75,6 +77,8 @@ def actualizar_insumo(insumo_id: int, body: InsumoUpdate):
         sets.append("precio_ref = %s"); params.append(body.precio_ref)
     if body.activo is not None:
         sets.append("activo = %s"); params.append(body.activo)
+    if body.lugar_compra is not None:
+        sets.append("lugar_compra = %s"); params.append(body.lugar_compra)
     if not sets:
         raise HTTPException(status_code=400, detail="Sin campos para actualizar")
     params.append(insumo_id)
