@@ -711,15 +711,23 @@ function TabTrabajador() {
 // TAB 5 — GENERAL
 // ════════════════════════════════════════════════════════════════════════════
 function TabGeneral() {
-  const [desde, setDesde]       = useState(primerDiaMes())
-  const [hasta, setHasta]       = useState(HOY)
-  const [datos, setDatos]       = useState(null)
-  const [cargando, setCargando] = useState(false)
-  const [error, setError]       = useState('')
+  const [desde, setDesde]             = useState(primerDiaMes())
+  const [hasta, setHasta]             = useState(HOY)
+  const [datos, setDatos]             = useState(null)
+  const [gastosResumen, setGastosResumen] = useState(null)
+  const [cargando, setCargando]       = useState(false)
+  const [error, setError]             = useState('')
 
   const cargar = async () => {
     setCargando(true); setError('')
-    try { const res = await api.get(`/reportes/general?desde=${desde}&hasta=${hasta}`); setDatos(res.data) }
+    try {
+      const [repRes, gasRes] = await Promise.all([
+        api.get(`/reportes/general?desde=${desde}&hasta=${hasta}`),
+        api.get(`/gastos/resumen?desde=${desde}&hasta=${hasta}`),
+      ])
+      setDatos(repRes.data)
+      setGastosResumen(gasRes.data)
+    }
     catch (e) { setError(e?.response?.data?.detail ?? 'Error al cargar') }
     finally { setCargando(false) }
   }
@@ -780,12 +788,14 @@ function TabGeneral() {
               <div className="gv-card"><div className="gv-label">💰 Ventas totales</div><div className="gv-valor">{formatCOP(datos.total_ventas)}</div><div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{datos.total_facturas} facturas</div></div>
               <div className="gv-card"><div className="gv-label">🛒 Insumos</div><div className="gv-valor gv-rojo">{formatCOP(datos.total_insumos)}</div></div>
               <div className="gv-card"><div className="gv-label">👥 Nómina ({datos.num_semanas_nomina} sem.)</div><div className="gv-valor gv-rojo">{formatCOP(datos.total_nomina)}</div></div>
+              <div className="gv-card"><div className="gv-label">💸 Gastos generales</div><div className="gv-valor gv-rojo">{formatCOP(gastosResumen?.total ?? 0)}</div></div>
               {(() => {
-                const g = datos.ganancia
+                const g = datos.ganancia - (gastosResumen?.total ?? 0)
                 return (
-                  <div className={`gv-card ganancia-real ${g < 0 ? 'negativa' : ''}`}>
+                  <div className={`gv-card ganancia-real ${g < 0 ? 'negativa' : ''}`} style={{ gridColumn: 'span 2' }}>
                     <div className="gv-label">📈 Ganancia real</div>
                     <div className={`gv-valor ${g >= 0 ? 'gv-verde' : 'gv-rojo'}`}>{g >= 0 ? '↑ ' : '↓ '}{formatCOP(Math.abs(g))}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>ventas − insumos − nómina − gastos</div>
                   </div>
                 )
               })()}
@@ -797,6 +807,20 @@ function TabGeneral() {
             <div className="report-card"><div className="report-card-label">Nequi</div><div className="report-card-value">{formatCOP(datos.total_nequi)}</div></div>
             <div className="report-card"><div className="report-card-label">Otros</div><div className="report-card-value">{formatCOP(datos.total_otros)}</div></div>
           </div>
+
+          {gastosResumen?.por_categoria?.length > 0 && (
+            <div className="gastos-ventas-section" style={{ marginBottom: 20 }}>
+              <div className="gastos-ventas-title">💸 Gastos por categoría</div>
+              <div className="gastos-reporte-cats">
+                {gastosResumen.por_categoria.map(c => (
+                  <div key={c.categoria} className="gasto-cat-reporte-row">
+                    <span>{c.emoji} {c.categoria}</span>
+                    <span style={{ fontWeight: 600, color: '#f87171', fontVariantNumeric: 'tabular-nums' }}>{formatCOP(c.total)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {datos.ventas_por_dia.length > 0 && (
             <div className="mes-barras-section">
