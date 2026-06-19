@@ -391,11 +391,17 @@ def _crear_base_y_tablas() -> None:
         """
         CREATE TABLE IF NOT EXISTS categorias_gasto (
           id     SERIAL       PRIMARY KEY,
-          nombre VARCHAR(100) NOT NULL,
+          nombre VARCHAR(100) NOT NULL UNIQUE,
           emoji  VARCHAR(10)  DEFAULT '💸',
           activo SMALLINT     DEFAULT 1,
           orden  INTEGER      DEFAULT 0
         )
+        """
+      )
+      cur.execute(
+        """
+        ALTER TABLE categorias_gasto
+        ADD CONSTRAINT IF NOT EXISTS uq_cat_gasto_nombre UNIQUE (nombre)
         """
       )
       cur.execute(
