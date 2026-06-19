@@ -429,3 +429,93 @@
 }
 .prep-add-btn:hover:not(:disabled) { background: var(--red-hover); }
 .prep-add-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* ── Badges de rol ── */
+.badge-rol-admin {
+  background: var(--red-dim, #2a0a0a);
+  color: #f87171;
+  border: 1px solid var(--red, #dc2626);
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.badge-rol-cajero {
+  background: #0a1a0a;
+  color: #4ade80;
+  border: 1px solid #22c55e;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* ── Sesiones activas ── */
+.usuarios-sesiones {
+  margin-top: 24px;
+  border-top: 1px solid var(--border, #2a2a2a);
+  padding-top: 16px;
+}
+
+.usuarios-sesiones-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.usuarios-sesiones-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #f1f1f1);
+}
+
+.sesion-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--bg-card, #1a1a1a);
+  border: 1px solid var(--border, #2a2a2a);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  gap: 12px;
+}
+
+.sesion-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sesion-nombre {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary, #f1f1f1);
+}
+
+.sesion-tiempo {
+  font-size: 11px;
+  color: var(--text-muted, #666);
+}
+
+.btn-cerrar-sesion {
+  background: var(--red-dim, #2a0a0a);
+  color: #f87171;
+  border: 1px solid var(--red, #dc2626);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.btn-cerrar-sesion:hover {
+  background: var(--red, #dc2626);
+  color: white;
+}

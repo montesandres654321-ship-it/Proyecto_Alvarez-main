@@ -4,6 +4,16 @@ import api from '../api/client'
 import { formatMiles, parseMiles } from '../utils/formatMiles'
 import './Admin.css'
 
+// ── Utilidades de tiempo relativo ─────────────────────────────────────────
+function tiempoRelativo(isoStr) {
+  if (!isoStr) return 'desconocido'
+  const diff = Math.floor((Date.now() - new Date(isoStr)) / 1000)
+  if (diff < 60) return 'hace un momento'
+  if (diff < 3600) return `hace ${Math.floor(diff / 60)} min`
+  if (diff < 86400) return `hace ${Math.floor(diff / 3600)} h`
+  return `hace ${Math.floor(diff / 86400)} días`
+}
+
 function AdminContenido() {
   const [productos, setProductos] = useState([])
   const [config, setConfig] = useState({})
@@ -30,6 +40,26 @@ function AdminContenido() {
     try {
       const res = await api.get('/insumos/catalogo')
       setInsumos(res.data)
+    } catch {}
+  }
+
+  // ── Usuarios ─────────────────────────────────────────────────────────────
+  const [usuariosLista, setUsuariosLista]     = useState([])
+  const [usuarioForm, setUsuarioForm]         = useState(null)
+  const [usuarioSaving, setUsuarioSaving]     = useState(false)
+  const [sesionesActivas, setSesionesActivas] = useState([])
+
+  const cargarUsuarios = async () => {
+    try {
+      const res = await api.get('/usuarios/')
+      setUsuariosLista(res.data)
+    } catch {}
+  }
+
+  const cargarSesionesActivas = async () => {
+    try {
+      const res = await api.get('/usuarios/sesiones-activas')
+      setSesionesActivas(res.data)
     } catch {}
   }
 
@@ -68,6 +98,7 @@ function AdminContenido() {
     cargarConfig()
     cargarInsumos()
     cargarTrabajadores()
+    cargarUsuarios()
   }, [])
 
   const flash = (m) => { setMsg(m); setTimeout(() => setMsg(''), 3000) }
@@ -182,6 +213,12 @@ function AdminContenido() {
           onClick={() => { setTab('trabajadores'); cargarTrabajadores() }}
         >
           Trabajadores
+        </button>
+        <button
+          className={`admin-tab${tab === 'usuarios' ? ' active' : ''}`}
+          onClick={() => { setTab('usuarios'); cargarUsuarios(); cargarSesionesActivas() }}
+        >
+          Usuarios
         </button>
         <button
           className={`admin-tab${tab === 'config' ? ' active' : ''}`}
@@ -725,6 +762,239 @@ function AdminContenido() {
               <p style={{ color: 'var(--text-muted)', fontSize: 13, textAlign: 'center', padding: '16px 0' }}>
                 Sin trabajadores registrados
               </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── USUARIOS ── */}
+      {tab === 'usuarios' && (
+        <div className="admin-section">
+          <button
+            className="btn-nuevo-producto"
+            onClick={() => setUsuarioForm({ nombre: '', pin: '', pinConfirm: '', rol: 'cajero' })}
+          >
+            + Nuevo usuario
+          </button>
+
+          {usuarioForm !== null && (
+            <div className="form-producto">
+              <h3>{usuarioForm.id ? 'Editar usuario' : 'Nuevo usuario'}</h3>
+              <div className="form-grid">
+                <label className="form-label">
+                  Nombre
+                  <input
+                    value={usuarioForm.nombre}
+                    onChange={e => setUsuarioForm({ ...usuarioForm, nombre: e.target.value })}
+                    placeholder="Nombre completo"
+                  />
+                </label>
+                <label className="form-label">
+                  PIN (4 dígitos)
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    maxLength={4}
+                    value={usuarioForm.pin}
+                    onChange={e => setUsuarioForm({ ...usuarioForm, pin: e.target.value.replace(/\D/g, '').slice(0, 4) })}
+                    placeholder="••••"
+                  />
+                </label>
+                <label className="form-label">
+                  Confirmar PIN
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    maxLength={4}
+                    value={usuarioForm.pinConfirm}
+                    onChange={e => setUsuarioForm({ ...usuarioForm, pinConfirm: e.target.value.replace(/\D/g, '').slice(0, 4) })}
+                    placeholder="••••"
+                  />
+                </label>
+                <label className="form-label">
+                  Rol
+                  <select
+                    className="form-select"
+                    value={usuarioForm.rol}
+                    onChange={e => setUsuarioForm({ ...usuarioForm, rol: e.target.value })}
+                  >
+                    <option value="cajero">Cajero</option>
+                    <option value="admin">Administrador</option>
+                  </select>
+                </label>
+              </div>
+              <div className="form-acciones">
+                <button className="btn-form-cancel" onClick={() => setUsuarioForm(null)}>Cancelar</button>
+                <button
+                  className="btn-form-save"
+                  disabled={usuarioSaving || !usuarioForm.nombre.trim() || usuarioForm.pin.length !== 4}
+                  onClick={async () => {
+                    if (!usuarioForm.id && usuarioForm.pin !== usuarioForm.pinConfirm) {
+                      flash('Los PINs no coinciden')
+                      return
+                    }
+                    setUsuarioSaving(true)
+                    try {
+                      if (usuarioForm.id) {
+                        const payload = { nombre: usuarioForm.nombre.trim(), rol: usuarioForm.rol }
+                        if (usuarioForm.pin) payload.pin = usuarioForm.pin
+                        await api.put(`/usuarios/${usuarioForm.id}`, payload)
+                        flash('Usuario actualizado ✓')
+                      } else {
+                        await api.post('/usuarios/', {
+                          nombre: usuarioForm.nombre.trim(),
+                          pin: usuarioForm.pin,
+                          rol: usuarioForm.rol,
+                        })
+                        flash('Usuario creado ✓')
+                      }
+                      setUsuarioForm(null)
+                      cargarUsuarios()
+                    } catch (e) {
+                      flash('Error: ' + (e?.response?.data?.detail ?? e.message))
+                    } finally {
+                      setUsuarioSaving(false)
+                    }
+                  }}
+                >
+                  {usuarioSaving ? 'Guardando…' : 'Guardar'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="admin-table-wrapper">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Rol</th>
+                  <th>Estado</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {usuariosLista.map(u => (
+                  <tr key={u.id} className={u.activo ? '' : 'row-inactivo'}>
+                    <td>{u.nombre}</td>
+                    <td>
+                      <span className={u.rol === 'admin' ? 'badge-rol-admin' : 'badge-rol-cajero'}>
+                        {u.rol === 'admin' ? 'Admin' : 'Cajero'}
+                      </span>
+                    </td>
+                    <td>
+                      <button
+                        className={`toggle-switch ${u.activo ? 'on' : 'off'}`}
+                        title={u.activo ? 'Activo' : 'Inactivo'}
+                        onClick={async () => {
+                          try {
+                            await api.put(`/usuarios/${u.id}`, { activo: u.activo ? 0 : 1 })
+                            cargarUsuarios()
+                          } catch (e) {
+                            flash('Error: ' + (e?.response?.data?.detail ?? e.message))
+                          }
+                        }}
+                      >
+                        <span className="toggle-thumb" />
+                      </button>
+                    </td>
+                    <td className="td-acciones">
+                      <button
+                        className="btn-edit"
+                        title="Editar"
+                        onClick={() => setUsuarioForm({ ...u, pin: '', pinConfirm: '' })}
+                      >✏️</button>
+                      <button
+                        className="btn-edit"
+                        title="Eliminar"
+                        style={{ marginLeft: 4 }}
+                        onClick={async () => {
+                          try {
+                            await api.delete(`/usuarios/${u.id}`)
+                            flash('Usuario desactivado ✓')
+                            cargarUsuarios()
+                          } catch (e) {
+                            flash('Error: ' + (e?.response?.data?.detail ?? e.message))
+                          }
+                        }}
+                      >🗑</button>
+                    </td>
+                  </tr>
+                ))}
+                {usuariosLista.length === 0 && (
+                  <tr><td colSpan={4} style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 20 }}>
+                    Sin usuarios registrados
+                  </td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Tarjetas móvil — usuarios */}
+          <div className="admin-cards-movil">
+            {usuariosLista.map(u => (
+              <div key={u.id} className={`admin-card-item${u.activo ? '' : ' card-inactivo'}`}>
+                <div className="admin-card-header">
+                  <span className="admin-card-nombre">{u.nombre}</span>
+                  <div className="admin-card-acciones">
+                    <button className="btn-edit" title="Editar" onClick={() => setUsuarioForm({ ...u, pin: '', pinConfirm: '' })}>✏️</button>
+                    <button className="btn-edit" title="Eliminar" onClick={async () => {
+                      try {
+                        await api.delete(`/usuarios/${u.id}`)
+                        flash('Usuario desactivado ✓')
+                        cargarUsuarios()
+                      } catch (e) {
+                        flash('Error: ' + (e?.response?.data?.detail ?? e.message))
+                      }
+                    }}>🗑</button>
+                  </div>
+                </div>
+                <div className="admin-card-detalles">
+                  <span className={u.rol === 'admin' ? 'badge-rol-admin' : 'badge-rol-cajero'}>
+                    {u.rol === 'admin' ? 'Admin' : 'Cajero'}
+                  </span>
+                  <span style={{ color: u.activo ? '#4ade80' : 'var(--text-muted)', fontSize: 11 }}>
+                    {u.activo ? 'Activo' : 'Inactivo'}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Dispositivos conectados */}
+          <div className="usuarios-sesiones">
+            <div className="usuarios-sesiones-header">
+              <h3>Dispositivos conectados</h3>
+              <button className="btn-config-save" onClick={cargarSesionesActivas}>Actualizar</button>
+            </div>
+            {sesionesActivas.length === 0 ? (
+              <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Sin sesiones activas</p>
+            ) : (
+              sesionesActivas.map(s => (
+                <div key={s.sesion_id} className="sesion-card">
+                  <div className="sesion-info">
+                    <span className={s.rol === 'admin' ? 'badge-rol-admin' : 'badge-rol-cajero'}>
+                      {s.rol === 'admin' ? 'Admin' : 'Cajero'}
+                    </span>
+                    <span className="sesion-nombre">{s.nombre}</span>
+                    <span className="sesion-tiempo">{tiempoRelativo(s.last_seen)}</span>
+                  </div>
+                  <button
+                    className="btn-cerrar-sesion"
+                    onClick={async () => {
+                      try {
+                        await api.delete(`/usuarios/sesiones/${s.sesion_id}`)
+                        cargarSesionesActivas()
+                        flash('Sesión cerrada ✓')
+                      } catch (e) {
+                        flash('Error: ' + (e?.response?.data?.detail ?? e.message))
+                      }
+                    }}
+                  >
+                    Cerrar sesión
+                  </button>
+                </div>
+              ))
             )}
           </div>
         </div>
