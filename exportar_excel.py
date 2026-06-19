@@ -752,9 +752,25 @@ def exportar_general(desde: str, hasta: str, output=None):
                 (desde, hasta),
             )
             detalle_v = [dict(r) for r in cur.fetchall()]
+            cur.execute(
+                """SELECT g.nombre, g.valor, g.tipo, g.fecha::text as fecha,
+                          COALESCE(g.categoria_nombre,'Otros') as categoria,
+                          COALESCE(c.emoji,'💸') as emoji, g.notas
+                   FROM gastos_generales g
+                   LEFT JOIN categorias_gasto c ON c.id = g.categoria_id
+                   WHERE g.fecha BETWEEN %s AND %s
+                   ORDER BY g.fecha""",
+                (desde, hasta),
+            )
+            gastos_lista = [dict(r) for r in cur.fetchall()]
+            cur.execute(
+                "SELECT COALESCE(SUM(valor),0) AS tg FROM gastos_generales WHERE fecha BETWEEN %s AND %s",
+                (desde, hasta),
+            )
+            total_gastos = int(cur.fetchone()["tg"] or 0)
 
     tv = int(rv["tv"] or 0)
-    ganancia = tv - total_ins - total_nom
+    ganancia = tv - total_ins - total_nom - total_gastos
 
     wb = Workbook()
 
@@ -772,6 +788,7 @@ def exportar_general(desde: str, hasta: str, output=None):
         ("Total insumos",      total_ins,                       red_font),
         ("Total nómina",       total_nom,                       red_font),
         (f"  Semanas ({len(nominas)})", "",                     None),
+        ("Total gastos generales", total_gastos,                red_font),
         ("Ganancia real",      ganancia,                        green_font if ganancia >= 0 else red_font),
     ]
     for ri, (lbl, val, fnt) in enumerate(rows_res, 4):
@@ -838,6 +855,17 @@ def exportar_general(desde: str, hasta: str, output=None):
     ws6.cell(fr6, 5, "TOTAL").font = gold_font
     c = ws6.cell(fr6, 6, tv); c.number_format = "#,##0"; c.font = gold_font
     for col, w in zip("ABCDEF", [18, 12, 10, 14, 12, 14]): ws6.column_dimensions[col].width = w
+
+    # ── Hoja 7: Gastos generales ──────────────────────────────────────────────
+    ws7 = wb.create_sheet("Gastos generales")
+    _set_header(ws7, 1, ["Fecha", "Nombre", "Categoría", "Tipo", "Valor", "Notas"], h_font, h_fill, h_align)
+    for g in gastos_lista:
+        ws7.append([g["fecha"], g["nombre"], f"{g['emoji']} {g['categoria']}", g["tipo"], int(g["valor"]), g.get("notas") or ""])
+        ws7.cell(ws7.max_row, 5).number_format = "#,##0"
+    fr7 = ws7.max_row + 2
+    ws7.cell(fr7, 4, "TOTAL").font = gold_font
+    c7 = ws7.cell(fr7, 5, total_gastos); c7.number_format = "#,##0"; c7.font = red_font
+    for col, w in zip("ABCDEF", [12, 30, 20, 12, 16, 24]): ws7.column_dimensions[col].width = w
 
     if output is not None:
         wb.save(output); return output
