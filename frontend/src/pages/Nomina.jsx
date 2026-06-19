@@ -3,6 +3,8 @@ import api, { formatCOP } from '../api/client'
 import DatePicker from '../components/DatePicker'
 import { formatMiles, parseMiles } from '../utils/formatMiles'
 import { guardarBorradorNomina, cargarBorradorNomina, limpiarBorradorNomina } from '../utils/persistencia'
+import borradorSync from '../utils/borradorSync'
+import usePOSStore from '../store/usePOSStore'
 import './Nomina.css'
 
 function formatFecha(iso) {
@@ -22,6 +24,7 @@ function formatSemana(inicio, fin) {
 
 export default function Nomina() {
   const hoy = new Date().toISOString().split('T')[0]
+  const { token } = usePOSStore()
 
   const [diasSeleccionados, setDiasSeleccionados] = useState([])
   const [trabajadores, setTrabajadores]   = useState([])
@@ -60,25 +63,44 @@ export default function Nomina() {
   useEffect(() => {
     cargarDatos()
     cargarHistorial()
-    // Restaurar borrador si existe
-    const borrador = cargarBorradorNomina()
-    if (borrador) {
-      if (borrador.diasSeleccionados) setDiasSeleccionados(borrador.diasSeleccionados)
-      if (borrador.asistencia) setAsistencia(borrador.asistencia)
-      if (borrador.tarifasEdit) setTarifasEdit(borrador.tarifasEdit)
-      mostrarToast('Borrador de nómina restaurado 👥')
+    // Restaurar borrador: BD primero, localStorage como fallback
+    const restaurar = async () => {
+      if (token) {
+        const borrador = await borradorSync.get('nomina')
+        if (borrador && Object.keys(borrador.asistencia || {}).length > 0) {
+          if (borrador.diasSeleccionados) setDiasSeleccionados(borrador.diasSeleccionados)
+          if (borrador.asistencia) setAsistencia(borrador.asistencia)
+          if (borrador.tarifasEdit) setTarifasEdit(borrador.tarifasEdit)
+          mostrarToast('👥 Nómina restaurada')
+          return
+        }
+      }
+      const borrador = cargarBorradorNomina()
+      if (borrador) {
+        if (borrador.diasSeleccionados) setDiasSeleccionados(borrador.diasSeleccionados)
+        if (borrador.asistencia) setAsistencia(borrador.asistencia)
+        if (borrador.tarifasEdit) setTarifasEdit(borrador.tarifasEdit)
+        mostrarToast('Borrador de nómina restaurado 👥')
+      }
     }
-  }, [])
+    restaurar()
+  }, [token])
 
-  // Auto-guardar borrador cuando cambia asistencia
+  // Auto-guardar borrador en BD y localStorage (debounce 1.5s)
   useEffect(() => {
     const tieneAsistencia = Object.values(asistencia).some(dias => dias.length > 0)
     if (!tieneAsistencia) {
       limpiarBorradorNomina()
       return
     }
-    guardarBorradorNomina({ diasSeleccionados, asistencia, tarifasEdit })
-  }, [diasSeleccionados, asistencia, tarifasEdit])
+    const datos = { diasSeleccionados, asistencia, tarifasEdit, timestamp: Date.now() }
+    guardarBorradorNomina(datos)
+    if (!token) return
+    const timer = setTimeout(() => {
+      borradorSync.guardar('nomina', datos)
+    }, 1500)
+    return () => clearTimeout(timer)
+  }, [diasSeleccionados, asistencia, tarifasEdit, token])
 
   const toggleDia = (fecha) => {
     setDiasSeleccionados(prev => {
@@ -176,6 +198,7 @@ export default function Nomina() {
 
       if (estado === 'pagada') {
         limpiarBorradorNomina()
+        borradorSync.limpiar('nomina')
         setConfirmacion({
           total: totalNomina,
           hora: new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),

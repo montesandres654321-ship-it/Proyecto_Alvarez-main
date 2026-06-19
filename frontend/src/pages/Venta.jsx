@@ -10,6 +10,7 @@ import ModalPrecioEspecial from '../components/ModalPrecioEspecial'
 import ModalPagoCredito from '../components/ModalPagoCredito'
 import { OPCIONES_DEFAULT } from '../utils/opcionesDefault'
 import { guardarCarrito, cargarCarrito, limpiarCarrito } from '../utils/persistencia'
+import borradorSync from '../utils/borradorSync'
 import { apiFetch } from '../utils/api'
 import { formatCOP } from '../api/client'
 import api from '../api/client'
@@ -20,7 +21,7 @@ export default function Venta() {
     mesaActual, mesas, domicilios, productos, categorias, categoriaActiva,
     setCategoriaActiva, cargarProductos, cargarMesa, setMesaActual,
     agregarItem, agregarItemCustom, quitarItem, cobrar, nequiNumero, eliminarDomicilio,
-    usuarioId,
+    usuarioId, token,
   } = usePOSStore()
 
   const [modalCobro, setModalCobro]         = useState(false)
@@ -60,21 +61,38 @@ export default function Venta() {
     } catch {}
   }
 
-  // Al montar: restaurar última mesa del usuario
+  // Al montar: restaurar última mesa (BD primero, localStorage como fallback)
   useEffect(() => {
-    if (!usuarioId) return
-    const borrador = cargarCarrito(usuarioId)
-    if (borrador?.mesa) {
-      setMesaActual(borrador.mesa)
-      mostrarToast('Carrito restaurado 🛒')
+    const cargarBorrador = async () => {
+      if (token) {
+        const borrador = await borradorSync.get('carrito')
+        if (borrador?.mesa) {
+          setMesaActual(borrador.mesa)
+          mostrarToast('🛒 Carrito restaurado')
+          return
+        }
+      }
+      if (usuarioId) {
+        const borrador = cargarCarrito(usuarioId)
+        if (borrador?.mesa) {
+          setMesaActual(borrador.mesa)
+          mostrarToast('Carrito restaurado 🛒')
+        }
+      }
     }
-  }, [usuarioId])
+    cargarBorrador()
+  }, [token, usuarioId])
 
-  // Al cambiar mesa: guardar selección
+  // Al cambiar mesa: guardar selección en BD y localStorage
   useEffect(() => {
-    if (!usuarioId) return
-    guardarCarrito(usuarioId, { mesa: mesaActual })
-  }, [mesaActual, usuarioId])
+    const timer = setTimeout(() => {
+      if (token) {
+        borradorSync.guardar('carrito', { mesa: mesaActual, timestamp: Date.now() })
+      }
+      if (usuarioId) guardarCarrito(usuarioId, { mesa: mesaActual })
+    }, 1000)
+    return () => clearTimeout(timer)
+  }, [mesaActual, token, usuarioId])
 
   useEffect(() => {
     const init = async () => {
@@ -157,7 +175,8 @@ export default function Venta() {
       }
     }
     if (slot) eliminarDomicilio(mesaActual)
-    // Limpiar borrador de mesa al confirmar venta
+    // Limpiar borrador al confirmar venta
+    if (token) borradorSync.limpiar('carrito')
     if (usuarioId) limpiarCarrito(usuarioId)
     setModalCobro(false)
     setVentaConfirmada(factura)

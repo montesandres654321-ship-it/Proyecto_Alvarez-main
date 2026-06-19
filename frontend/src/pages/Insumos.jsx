@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import api, { formatCOP } from '../api/client'
 import { formatMiles } from '../utils/formatMiles'
 import { guardarBorradorInsumos, cargarBorradorInsumos, limpiarBorradorInsumos } from '../utils/persistencia'
+import borradorSync from '../utils/borradorSync'
+import usePOSStore from '../store/usePOSStore'
 import DatePicker from '../components/DatePicker'
 import './Insumos.css'
 
@@ -33,6 +35,7 @@ function formatearFechaLarga(fecha) {
 
 export default function Insumos() {
   const hoy = new Date().toISOString().slice(0, 10)
+  const { token } = usePOSStore()
 
   const [fechaSeleccionada, setFechaSeleccionada] = useState(hoy)
   const [catalogo, setCatalogo]           = useState([])
@@ -67,25 +70,48 @@ export default function Insumos() {
   useEffect(() => {
     cargarCatalogo()
     cargarComprasDelDia(hoy)
-    const borrador = cargarBorradorInsumos()
-    if (borrador) {
-      setSeleccionados(borrador.seleccionados || {})
-      setFilas(borrador.filas || {})
-      setExtras(borrador.extras || [])
-      setNota(borrador.nota || '')
-      if (borrador.fecha) setFechaSeleccionada(borrador.fecha)
-      mostrarToast('Borrador de compra restaurado 📋')
+    // Restaurar borrador: BD primero, localStorage como fallback
+    const restaurar = async () => {
+      if (token) {
+        const borrador = await borradorSync.get('insumos')
+        if (borrador && Object.keys(borrador.seleccionados || {}).length > 0) {
+          setSeleccionados(borrador.seleccionados || {})
+          setFilas(borrador.filas || {})
+          setExtras(borrador.extras || [])
+          setNota(borrador.nota || '')
+          if (borrador.fecha) setFechaSeleccionada(borrador.fecha)
+          mostrarToast('📋 Borrador restaurado')
+          return
+        }
+      }
+      const borrador = cargarBorradorInsumos()
+      if (borrador) {
+        setSeleccionados(borrador.seleccionados || {})
+        setFilas(borrador.filas || {})
+        setExtras(borrador.extras || [])
+        setNota(borrador.nota || '')
+        if (borrador.fecha) setFechaSeleccionada(borrador.fecha)
+        mostrarToast('Borrador de compra restaurado 📋')
+      }
     }
-  }, [])
+    restaurar()
+  }, [token])
 
+  // Auto-guardar borrador en BD y localStorage (debounce 1.5s)
   useEffect(() => {
     const tieneDatos = Object.keys(seleccionados).length > 0 || extras.length > 0
     if (!tieneDatos) {
       limpiarBorradorInsumos()
       return
     }
-    guardarBorradorInsumos({ seleccionados, filas, extras, nota, fecha: fechaSeleccionada })
-  }, [seleccionados, filas, extras, nota])
+    const datos = { seleccionados, filas, extras, nota, fecha: fechaSeleccionada, timestamp: Date.now() }
+    guardarBorradorInsumos(datos)
+    if (!token) return
+    const timer = setTimeout(() => {
+      borradorSync.guardar('insumos', datos)
+    }, 1500)
+    return () => clearTimeout(timer)
+  }, [seleccionados, filas, extras, nota, token])
 
   // ── Chips ────────────────────────────────────────────────────────────────
 
