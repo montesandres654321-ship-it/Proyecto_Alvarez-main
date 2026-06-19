@@ -346,6 +346,52 @@ def _crear_base_y_tablas() -> None:
         )
         """
       )
+      cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS usuarios (
+          id         SERIAL      PRIMARY KEY,
+          nombre     VARCHAR(100) NOT NULL,
+          pin        VARCHAR(10)  NOT NULL,
+          rol        VARCHAR(10)  DEFAULT 'cajero'
+            CHECK (rol IN ('admin','cajero')),
+          activo     SMALLINT     DEFAULT 1,
+          created_at TIMESTAMP    DEFAULT NOW()
+        )
+        """
+      )
+      cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS sesiones (
+          id          SERIAL       PRIMARY KEY,
+          usuario_id  INTEGER      NOT NULL
+            REFERENCES usuarios(id),
+          token       VARCHAR(64)  UNIQUE NOT NULL,
+          dispositivo VARCHAR(200),
+          activo      SMALLINT     DEFAULT 1,
+          created_at  TIMESTAMP    DEFAULT NOW(),
+          last_seen   TIMESTAMP    DEFAULT NOW()
+        )
+        """
+      )
+      cur.execute(
+        """
+        INSERT INTO usuarios (nombre, pin, rol)
+        SELECT 'Administrador',
+          COALESCE(
+            (SELECT valor FROM configuracion
+             WHERE clave = 'pin_admin'), '1234'
+          ),
+          'admin'
+        WHERE NOT EXISTS (
+          SELECT 1 FROM usuarios WHERE rol = 'admin'
+        )
+        """
+      )
+
+
+def get_connection() -> "psycopg2.connection":
+  """Abre y devuelve una conexión raw (el llamador debe cerrarla)."""
+  return _get_connection()
 
 
 def _prefijo_año_actual() -> str:
