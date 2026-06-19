@@ -127,6 +127,7 @@ function TabDia({ recargarTurno }) {
   const [modalEliminar, setModalEliminar] = useState(null)
   const [totalInsumos, setTotalInsumos] = useState(0)
   const [totalNomina, setTotalNomina]   = useState(0)
+  const [totalGastos, setTotalGastos]   = useState(0)
 
   const cargar = async () => {
     setCargando(true); setError('')
@@ -157,7 +158,14 @@ function TabDia({ recargarTurno }) {
     } catch { setTotalNomina(0) }
   }
 
-  useEffect(() => { cargar(); cargarInsumos(); cargarNomina() }, [fecha])
+  const cargarGastosDia = async () => {
+    try {
+      const res = await api.get(`/gastos/resumen?desde=${fecha}&hasta=${fecha}`)
+      setTotalGastos(res.data.total ?? 0)
+    } catch { setTotalGastos(0) }
+  }
+
+  useEffect(() => { cargar(); cargarInsumos(); cargarNomina(); cargarGastosDia() }, [fecha])
 
   const exportar = async (fmt) => {
     try {
@@ -229,12 +237,14 @@ function TabDia({ recargarTurno }) {
             <div className="gv-card"><div className="gv-label">💰 Total vendido</div><div className="gv-valor">{formatCOP(r.total_ventas)}</div></div>
             <div className="gv-card"><div className="gv-label">🛒 Total insumos</div><div className="gv-valor gv-rojo">{formatCOP(totalInsumos)}</div></div>
             <div className="gv-card"><div className="gv-label">👥 Total nómina</div><div className="gv-valor gv-rojo">{formatCOP(totalNomina)}</div></div>
+            <div className="gv-card"><div className="gv-label">💸 Gastos generales</div><div className="gv-valor gv-rojo">{formatCOP(totalGastos)}</div></div>
             {(() => {
-              const g = r.total_ventas - totalInsumos - totalNomina
+              const g = r.total_ventas - totalInsumos - totalNomina - totalGastos
               return (
-                <div className={`gv-card ganancia-real ${g < 0 ? 'negativa' : ''}`}>
+                <div className={`gv-card ganancia-real ${g < 0 ? 'negativa' : ''}`} style={{ gridColumn: 'span 2' }}>
                   <div className="gv-label">📈 Ganancia real</div>
                   <div className={`gv-valor ${g >= 0 ? 'gv-verde' : 'gv-rojo'}`}>{g >= 0 ? '↑ ' : '↓ '}{formatCOP(Math.abs(g))}</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>ventas − insumos − nómina − gastos</div>
                 </div>
               )
             })()}
@@ -326,6 +336,7 @@ function TabFinSemana() {
   const [modoAuto, setModoAuto]       = useState(true)
   const [fechaManualSab, setFechaManualSab] = useState(obtenerSabadoActual())
   const [datos, setDatos]             = useState(null)
+  const [gastosFS, setGastosFS]       = useState(0)
   const [cargando, setCargando]       = useState(false)
   const [error, setError]             = useState('')
 
@@ -339,6 +350,13 @@ function TabFinSemana() {
   }
 
   useEffect(() => { cargar() }, [fecha])
+
+  useEffect(() => {
+    if (!datos) return
+    api.get(`/gastos/resumen?desde=${datos.fecha_sabado}&hasta=${datos.fecha_lunes}`)
+      .then(r => setGastosFS(r.data.total ?? 0))
+      .catch(() => setGastosFS(0))
+  }, [datos])
 
   const exportar = async () => {
     try {
@@ -417,12 +435,22 @@ function TabFinSemana() {
               {datos.nomina && <div className="fin-sub badge-estado-{datos.nomina.estado}">{datos.nomina.estado}</div>}
               {!datos.nomina && <div className="fin-sub" style={{ color: 'var(--text-muted)' }}>Sin registrar</div>}
             </div>
-            <div className={`gv-card ganancia-real ${datos.ganancia < 0 ? 'negativa' : ''}`}>
-              <div className="gv-label">📈 Ganancia real</div>
-              <div className={`gv-valor ${datos.ganancia >= 0 ? 'gv-verde' : 'gv-rojo'}`}>
-                {datos.ganancia >= 0 ? '↑ ' : '↓ '}{formatCOP(Math.abs(datos.ganancia))}
-              </div>
+            <div className="gv-card">
+              <div className="gv-label">💸 Gastos generales</div>
+              <div className="gv-valor gv-rojo">{formatCOP(gastosFS)}</div>
             </div>
+            {(() => {
+              const g = datos.ganancia - gastosFS
+              return (
+                <div className={`gv-card ganancia-real ${g < 0 ? 'negativa' : ''}`} style={{ gridColumn: 'span 2' }}>
+                  <div className="gv-label">📈 Ganancia real</div>
+                  <div className={`gv-valor ${g >= 0 ? 'gv-verde' : 'gv-rojo'}`}>
+                    {g >= 0 ? '↑ ' : '↓ '}{formatCOP(Math.abs(g))}
+                  </div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>ventas − insumos − nómina − gastos</div>
+                </div>
+              )
+            })()}
           </div>
         </>
       )}
@@ -437,13 +465,24 @@ function TabMes() {
   const hoyD  = new Date()
   const [anio, setAnio] = useState(hoyD.getFullYear())
   const [mes,  setMes]  = useState(hoyD.getMonth() + 1)
-  const [datos, setDatos]       = useState(null)
-  const [cargando, setCargando] = useState(false)
-  const [error, setError]       = useState('')
+  const [datos, setDatos]             = useState(null)
+  const [gastosResMes, setGastosResMes] = useState(null)
+  const [cargando, setCargando]       = useState(false)
+  const [error, setError]             = useState('')
 
   const cargar = async () => {
     setCargando(true); setError('')
-    try { const res = await api.get(`/reportes/mes?anio=${anio}&mes=${mes}`); setDatos(res.data) }
+    try {
+      const diasMes = new Date(anio, mes, 0).getDate()
+      const fIni = `${anio}-${String(mes).padStart(2,'0')}-01`
+      const fFin = `${anio}-${String(mes).padStart(2,'0')}-${String(diasMes).padStart(2,'0')}`
+      const [repRes, gasRes] = await Promise.all([
+        api.get(`/reportes/mes?anio=${anio}&mes=${mes}`),
+        api.get(`/gastos/resumen?desde=${fIni}&hasta=${fFin}`),
+      ])
+      setDatos(repRes.data)
+      setGastosResMes(gasRes.data)
+    }
     catch (e) { setError(e?.response?.data?.detail ?? 'Error al cargar') }
     finally { setCargando(false) }
   }
@@ -526,12 +565,14 @@ function TabMes() {
               <div className="gv-card"><div className="gv-label">💰 Ventas</div><div className="gv-valor">{formatCOP(datos.total_ventas)}</div></div>
               <div className="gv-card"><div className="gv-label">🛒 Insumos</div><div className="gv-valor gv-rojo">{formatCOP(datos.total_insumos)}</div></div>
               <div className="gv-card"><div className="gv-label">👥 Nómina ({datos.num_semanas_nomina} sem.)</div><div className="gv-valor gv-rojo">{formatCOP(datos.total_nomina)}</div></div>
+              <div className="gv-card"><div className="gv-label">💸 Gastos generales</div><div className="gv-valor gv-rojo">{formatCOP(gastosResMes?.total ?? 0)}</div></div>
               {(() => {
-                const g = datos.ganancia
+                const g = datos.ganancia - (gastosResMes?.total ?? 0)
                 return (
-                  <div className={`gv-card ganancia-real ${g < 0 ? 'negativa' : ''}`}>
+                  <div className={`gv-card ganancia-real ${g < 0 ? 'negativa' : ''}`} style={{ gridColumn: 'span 2' }}>
                     <div className="gv-label">📈 Ganancia</div>
                     <div className={`gv-valor ${g >= 0 ? 'gv-verde' : 'gv-rojo'}`}>{g >= 0 ? '↑ ' : '↓ '}{formatCOP(Math.abs(g))}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>ventas − insumos − nómina − gastos</div>
                   </div>
                 )
               })()}
@@ -910,6 +951,7 @@ function TabDashboard() {
   const [cargando,       setCargando]       = useState(true)
   const [cargandoTop,    setCargandoTop]    = useState(false)
   const [creditosDatos,  setCreditosDatos]  = useState({ total: 0, count: 0 })
+  const [gastosMes,      setGastosMes]      = useState(0)
 
   useEffect(() => {
     const cargarCreditos = async () => {
@@ -929,9 +971,16 @@ function TabDashboard() {
     const cargar = async () => {
       setCargando(true)
       try {
-        const res = await api.get('/reportes/dashboard')
-        setDatos(res.data)
-        setTopProductos(res.data.top_productos || [])
+        const hoyD = new Date()
+        const mesIni = `${hoyD.getFullYear()}-${String(hoyD.getMonth()+1).padStart(2,'0')}-01`
+        const mesFin = new Date(hoyD.getFullYear(), hoyD.getMonth()+1, 0).toISOString().slice(0,10)
+        const [dashRes, gasRes] = await Promise.all([
+          api.get('/reportes/dashboard'),
+          api.get(`/gastos/resumen?desde=${mesIni}&hasta=${mesFin}`),
+        ])
+        setDatos(dashRes.data)
+        setTopProductos(dashRes.data.top_productos || [])
+        setGastosMes(gasRes.data.total ?? 0)
       } catch {}
       finally { setCargando(false) }
     }
@@ -1109,12 +1158,22 @@ function TabDashboard() {
             <div className="gv-label">👥 Nómina</div>
             <div className="gv-valor gv-rojo">{formatCOP(datos.mes.total_nomina)}</div>
           </div>
-          <div className={`gv-card ganancia-real ${datos.mes.ganancia < 0 ? 'negativa' : ''}`}>
-            <div className="gv-label">📈 Ganancia</div>
-            <div className={`gv-valor ${datos.mes.ganancia >= 0 ? 'gv-verde' : 'gv-rojo'}`}>
-              {datos.mes.ganancia >= 0 ? '↑ ' : '↓ '}{formatCOP(Math.abs(datos.mes.ganancia))}
-            </div>
+          <div className="gv-card">
+            <div className="gv-label">💸 Gastos generales</div>
+            <div className="gv-valor gv-rojo">{formatCOP(gastosMes)}</div>
           </div>
+          {(() => {
+            const g = datos.mes.ganancia - gastosMes
+            return (
+              <div className={`gv-card ganancia-real ${g < 0 ? 'negativa' : ''}`} style={{ gridColumn: 'span 2' }}>
+                <div className="gv-label">📈 Ganancia</div>
+                <div className={`gv-valor ${g >= 0 ? 'gv-verde' : 'gv-rojo'}`}>
+                  {g >= 0 ? '↑ ' : '↓ '}{formatCOP(Math.abs(g))}
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>ventas − insumos − nómina − gastos</div>
+              </div>
+            )
+          })()}
         </div>
       </div>
     </div>

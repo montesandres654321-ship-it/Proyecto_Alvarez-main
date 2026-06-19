@@ -152,7 +152,9 @@ export default function Venta() {
           }),
         })
         cargarCreditos()
-      } catch {}
+      } catch {
+        mostrarToast('⚠️ Venta registrada pero no se pudo guardar el crédito. Créalo manualmente en la sección Créditos.')
+      }
     }
     if (slot) eliminarDomicilio(mesaActual)
     // Limpiar borrador de mesa al confirmar venta
