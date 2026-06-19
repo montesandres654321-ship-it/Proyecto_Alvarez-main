@@ -47,6 +47,8 @@ export default function Insumos() {
   const [comprasHoy, setComprasHoy]       = useState([])
   const [expandida, setExpandida]         = useState(null)
   const [toast, setToast]                 = useState('')
+  const [busqueda, setBusqueda]           = useState('')
+  const [filtroLugar, setFiltroLugar]     = useState('todos')
 
   const mostrarToast = (texto) => {
     setToast(texto)
@@ -345,6 +347,21 @@ export default function Insumos() {
 
   const totalGeneral = totalReal + totalTentativo
 
+  const totalSincelejo = Object.entries(filas)
+    .filter(([id, f]) => {
+      const ins = catalogo.find(c => c.id === parseInt(id))
+      return seleccionados[id] && f.estado === 'guardado' && ins?.lugar_compra === 'sincelejo'
+    })
+    .reduce((sum, [, f]) => sum + (f.modoSimple ? f.totalDirecto : f.subtotal), 0)
+
+  const totalSampues = Object.entries(filas)
+    .filter(([id, f]) => {
+      const ins = catalogo.find(c => c.id === parseInt(id))
+      return seleccionados[id] && f.estado === 'guardado' &&
+        (ins?.lugar_compra === 'sampues' || ins?.lugar_compra === 'ambos')
+    })
+    .reduce((sum, [, f]) => sum + (f.modoSimple ? f.totalDirecto : f.subtotal), 0)
+
   const tituloHistorial = fechaSeleccionada === hoy
     ? `Compras registradas hoy (${comprasHoy.length})`
     : `Compras del ${formatearFechaLarga(fechaSeleccionada)} (${comprasHoy.length})`
@@ -386,24 +403,77 @@ export default function Insumos() {
         </button>
       </div>
 
+      {/* ── Buscador ─────────────────────────────────────────────────────────── */}
+      {Object.keys(seleccionados).length > 0 && (
+        <div className="insumos-buscador">
+          <div className="buscador-input-wrap">
+            <span className="buscador-icon">🔍</span>
+            <input
+              type="text"
+              className="buscador-input"
+              placeholder="Buscar en seleccionados..."
+              value={busqueda}
+              onChange={e => setBusqueda(e.target.value)}
+            />
+            {busqueda && (
+              <button className="buscador-clear" onClick={() => setBusqueda('')}>×</button>
+            )}
+          </div>
+          <div className="buscador-filtros">
+            {['todos', 'sincelejo', 'sampues'].map(f => (
+              <button
+                key={f}
+                className={`filtro-btn${filtroLugar === f ? ' activo' : ''} filtro-${f}`}
+                onClick={() => setFiltroLugar(f)}
+              >
+                {f === 'todos' ? 'Todos' : f === 'sincelejo' ? '🔵 Sincelejo' : '🟣 Sampués'}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ── Tarjetas detalle de catálogo ────────────────────────────────────── */}
       {Object.keys(seleccionados).length > 0 && (
         <div className="insumos-detalle-titulo">Ingresa cantidades y valores</div>
       )}
 
-      {catalogo
-        .filter(ins => seleccionados[ins.id])
-        .map(ins => {
-          const fila = filas[ins.id] || {}
-          const esGuardado = fila.estado === 'guardado'
-          const valSubtotal = fila.modoSimple ? (fila.totalDirecto || 0) : (fila.subtotal || 0)
-          return (
+      {(() => {
+        const insumosVisibles = catalogo
+          .filter(ins => seleccionados[ins.id])
+          .filter(ins => !busqueda || ins.nombre.toLowerCase().includes(busqueda.toLowerCase()))
+          .filter(ins => {
+            if (filtroLugar === 'todos') return true
+            if (filtroLugar === 'sincelejo') return ins.lugar_compra === 'sincelejo'
+            if (filtroLugar === 'sampues') return ins.lugar_compra === 'sampues' || ins.lugar_compra === 'ambos'
+            return true
+          })
+        return (
+          <>
+            {busqueda && (
+              <div className="buscador-resultado">
+                {insumosVisibles.length} resultado{insumosVisibles.length !== 1 ? 's' : ''}
+              </div>
+            )}
+            {insumosVisibles.map(ins => {
+              const fila = filas[ins.id] || {}
+              const esGuardado = fila.estado === 'guardado'
+              const lugar = ins.lugar_compra || 'ambos'
+              const claseCard = esGuardado ? 'card-guardado' : (
+                lugar === 'sincelejo' ? 'card-sincelejo-lugar' :
+                lugar === 'sampues' ? 'card-sampues-lugar' : 'card-tentativo'
+              )
+              const claseNombre = esGuardado ? 'nombre-verde' :
+                lugar === 'sincelejo' ? 'sincelejo' :
+                lugar === 'sampues' ? 'sampues' : ''
+              const valSubtotal = fila.modoSimple ? (fila.totalDirecto || 0) : (fila.subtotal || 0)
+              return (
             <div
               key={ins.id}
-              className={`insumo-detalle-card ${esGuardado ? 'card-guardado' : 'card-tentativo'}`}
+              className={`insumo-detalle-card ${claseCard}`}
             >
               <div className="insumo-detalle-header">
-                <span className={`insumo-detalle-nombre ${esGuardado ? 'nombre-verde' : ''}`}>
+                <span className={`insumo-detalle-nombre ${claseNombre}`}>
                   ✓ {ins.nombre}
                 </span>
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
@@ -411,6 +481,11 @@ export default function Insumos() {
                     ? <span className="badge-guardado">✅ Pagado</span>
                     : <span className="badge-tentativo">Tentativo</span>
                   }
+                  {!esGuardado && (
+                    <span className={`badge-lugar badge-lugar-${lugar}`}>
+                      {lugar === 'sincelejo' ? '🔵 Sincelejo' : lugar === 'sampues' ? '🟣 Sampués' : '🟢 Ambos'}
+                    </span>
+                  )}
                   {!esGuardado && (
                     <button
                       className={`btn-modo-mini${fila.modoSimple ? ' modo-simple' : ''}`}
@@ -514,8 +589,11 @@ export default function Insumos() {
                 )}
               </div>
             </div>
-          )
-        })}
+              )
+            })}
+          </>
+        )
+      })()}
 
       {/* ── Extras ───────────────────────────────────────────────────────────── */}
       {extras.map((ex, i) => {
@@ -658,8 +736,25 @@ export default function Insumos() {
       {(Object.keys(seleccionados).length > 0 || extras.length > 0) && (
         <div className="insumos-totales-box">
           {totalReal > 0 && (
+            <>
+              {totalSincelejo > 0 && (
+                <div className="total-lugar sincelejo">
+                  <span>🔵 Sincelejo</span>
+                  <span>$ {formatMiles(totalSincelejo)}</span>
+                </div>
+              )}
+              {totalSampues > 0 && (
+                <div className="total-lugar sampues">
+                  <span>🟣 Sampués</span>
+                  <span>$ {formatMiles(totalSampues)}</span>
+                </div>
+              )}
+              <div className="total-separador" />
+            </>
+          )}
+          {totalReal > 0 && (
             <div className="total-row-real">
-              <div className="total-row-label verde">✅ Comprado y pagado</div>
+              <div className="total-row-label verde">✅ Total pagado</div>
               <div className="total-row-valor verde">$ {formatMiles(totalReal)}</div>
             </div>
           )}
@@ -669,7 +764,7 @@ export default function Insumos() {
               <div className="total-row-valor gold">$ {formatMiles(totalTentativo)}</div>
             </div>
           )}
-          {totalReal > 0 && totalTentativo > 0 && <div className="total-separador" />}
+          <div className="total-separador" />
           <div className="total-row-general">
             <div className="total-general-label">TOTAL ESTIMADO</div>
             <div className="total-general-valor">$ {formatMiles(totalGeneral)}</div>
