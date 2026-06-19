@@ -15,7 +15,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from persistencia import inicializar_bd
-from backend.routers import auth, configuracion, creditos, insumos, mesas, nomina, preparaciones, productos, reportes, turnos, ventas
+from backend.routers import auth, configuracion, creditos, insumos, mesas, nomina, preparaciones, productos, reportes, turnos, usuarios, ventas
 from backend.websocket import set_event_loop, websocket_mesas
 
 # ── Paths ─────────────────────────────────────────────────────────────────
@@ -81,16 +81,30 @@ async def pin_middleware(request: Request, call_next):
     if request.url.path.startswith("/admin"):
         from persistencia import get_config
         pin_correcto = get_config("pin_admin", "1234")
-        if request.headers.get("X-PIN", "") != pin_correcto:
-            return JSONResponse(
-                status_code=401,
-                content={"detail": "PIN requerido o incorrecto (header X-PIN)"},
-            )
+
+        # Legacy: X-PIN header
+        if request.headers.get("X-PIN", "") == pin_correcto:
+            return await call_next(request)
+
+        # Nuevo: Authorization Bearer token de usuario admin
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+            from backend.routers.auth import get_usuario_por_token
+            usuario = get_usuario_por_token(token)
+            if usuario and usuario.get("rol") == "admin":
+                return await call_next(request)
+
+        return JSONResponse(
+            status_code=401,
+            content={"detail": "PIN requerido o incorrecto (header X-PIN)"},
+        )
     return await call_next(request)
 
 # ── Routers API ───────────────────────────────────────────────────────────
 
 app.include_router(auth.router)
+app.include_router(usuarios.router)
 app.include_router(creditos.router)
 app.include_router(productos.router)
 app.include_router(configuracion.router)
