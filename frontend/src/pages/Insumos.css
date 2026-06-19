@@ -441,3 +441,191 @@
   from { opacity: 0; transform: translateX(-50%) translateY(8px); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
+
+/* ── Tarjeta GUARDADO (verde) ─────────────────────────────────────────── */
+.card-guardado {
+  background: #0a1a0a !important;
+  border-color: #22c55e !important;
+}
+.nombre-verde {
+  color: #22c55e !important;
+}
+.badge-guardado {
+  font-size: 10px;
+  background: #0f2010;
+  color: #4ade80;
+  border: 1px solid #22c55e;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-weight: 500;
+}
+.badge-tentativo {
+  font-size: 10px;
+  background: #1a1200;
+  color: #F0A500;
+  border: 1px solid #443300;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-weight: 500;
+}
+
+/* ── Datos en modo guardado ────────────────────────────────────────────── */
+.insumo-guardado-datos {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 0;
+}
+.insumo-guardado-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+.guardado-label {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.guardado-val {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.guardado-val.verde {
+  color: #22c55e;
+  font-size: 15px;
+}
+
+/* ── Footer de la tarjeta ──────────────────────────────────────────────── */
+.insumo-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 10px;
+  border-top: 0.5px solid var(--border-subtle);
+  margin-top: 4px;
+}
+.subtotal-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom: 3px;
+}
+.insumo-subtotal-val.verde {
+  color: #22c55e;
+}
+
+/* ── Botones guardar ───────────────────────────────────────────────────── */
+.btn-guardar-individual {
+  padding: 10px 18px;
+  background: var(--red);
+  border: none;
+  border-radius: var(--radius-md);
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 120ms;
+  white-space: nowrap;
+}
+.btn-guardar-individual:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.btn-guardar-individual:hover:not(:disabled) {
+  opacity: 0.85;
+}
+.btn-ya-guardado {
+  padding: 10px 18px;
+  background: #0f2010;
+  border: 1px solid #22c55e;
+  border-radius: var(--radius-md);
+  color: #4ade80;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: not-allowed;
+  white-space: nowrap;
+}
+
+/* ── Box de totales ────────────────────────────────────────────────────── */
+.insumos-totales-box {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  padding: 16px;
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.total-row-real,
+.total-row-tent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.total-row-label {
+  font-size: 12px;
+  font-weight: 500;
+}
+.total-row-label.verde { color: #22c55e; }
+.total-row-label.gold  { color: var(--gold); }
+.total-row-valor {
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.total-row-valor.verde { color: #22c55e; }
+.total-row-valor.gold  { color: var(--gold); }
+.total-separador {
+  height: 0.5px;
+  background: var(--border-subtle);
+}
+.total-row-general {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.total-general-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.total-general-valor {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.btn-guardar-pendientes {
+  width: 100%;
+  padding: 12px;
+  background: var(--bg-elevated);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 120ms;
+}
+.btn-guardar-pendientes:hover {
+  border-color: var(--red);
+  color: #f87171;
+}
+
+/* ── Responsive móvil ──────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .btn-guardar-individual,
+  .btn-ya-guardado {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  .insumo-subtotal-val {
+    font-size: 16px;
+  }
+  .total-general-valor {
+    font-size: 18px;
+  }
+}

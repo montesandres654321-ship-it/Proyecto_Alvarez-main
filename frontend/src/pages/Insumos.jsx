@@ -18,6 +18,9 @@ function filaExtraVacia() {
     modoSimple: false,
     totalDirectoDisplay: '',
     totalDirecto: 0,
+    estado: 'tentativo',
+    guardando: false,
+    detalleId: null,
   }
 }
 
@@ -32,20 +35,18 @@ export default function Insumos() {
   const hoy = new Date().toISOString().slice(0, 10)
 
   const [fechaSeleccionada, setFechaSeleccionada] = useState(hoy)
-  const [catalogo, setCatalogo]         = useState([])
+  const [catalogo, setCatalogo]           = useState([])
   const [seleccionados, setSeleccionados] = useState({})
-  const [filas, setFilas]               = useState({})
-  const [extras, setExtras]             = useState([])
-  const [nota, setNota]                 = useState('')
-  const [guardando, setGuardando]       = useState(false)
-  const [msg, setMsg]                   = useState('')
-  const [comprasHoy, setComprasHoy]     = useState([])
-  const [expandida, setExpandida]       = useState(null)
-  const [confirmacion, setConfirmacion] = useState(null)
-  const [toast, setToast]               = useState('')
+  const [filas, setFilas]                 = useState({})
+  const [extras, setExtras]               = useState([])
+  const [nota, setNota]                   = useState('')
+  const [msg, setMsg]                     = useState('')
+  const [comprasHoy, setComprasHoy]       = useState([])
+  const [expandida, setExpandida]         = useState(null)
+  const [toast, setToast]                 = useState('')
 
-  const mostrarToast = (msg) => {
-    setToast(msg)
+  const mostrarToast = (texto) => {
+    setToast(texto)
     setTimeout(() => setToast(''), 3000)
   }
 
@@ -66,7 +67,6 @@ export default function Insumos() {
   useEffect(() => {
     cargarCatalogo()
     cargarComprasDelDia(hoy)
-    // Restaurar borrador si existe
     const borrador = cargarBorradorInsumos()
     if (borrador) {
       setSeleccionados(borrador.seleccionados || {})
@@ -78,7 +78,6 @@ export default function Insumos() {
     }
   }, [])
 
-  // Auto-guardar borrador cuando cambian los datos
   useEffect(() => {
     const tieneDatos = Object.keys(seleccionados).length > 0 || extras.length > 0
     if (!tieneDatos) {
@@ -104,6 +103,9 @@ export default function Insumos() {
         modoSimple: false,
         totalDirectoDisplay: '',
         totalDirecto: 0,
+        estado: 'tentativo',
+        guardando: false,
+        detalleId: null,
       },
     }))
   }
@@ -130,8 +132,7 @@ export default function Insumos() {
   const actualizarCantidadFila = (id, cant) => {
     setFilas(prev => {
       const f = prev[id]
-      const sub = Math.round(parseFloat(cant || 0) * (f.valorUnit || 0))
-      return { ...prev, [id]: { ...f, cantidad: cant, subtotal: sub } }
+      return { ...prev, [id]: { ...f, cantidad: cant, subtotal: Math.round(parseFloat(cant || 0) * (f.valorUnit || 0)) } }
     })
   }
 
@@ -155,12 +156,7 @@ export default function Insumos() {
     const num = raw ? parseInt(raw) : 0
     setFilas(prev => ({
       ...prev,
-      [id]: {
-        ...prev[id],
-        totalDirectoDisplay: raw ? formatMiles(raw) : '',
-        totalDirecto: num,
-        subtotal: num,
-      },
+      [id]: { ...prev[id], totalDirectoDisplay: raw ? formatMiles(raw) : '', totalDirecto: num, subtotal: num },
     }))
   }
 
@@ -173,11 +169,7 @@ export default function Insumos() {
   const agregarExtra = () => setExtras(prev => [...prev, filaExtraVacia()])
 
   const actualizarExtra = (i, updates) => {
-    setExtras(prev => {
-      const next = [...prev]
-      next[i] = { ...next[i], ...updates }
-      return next
-    })
+    setExtras(prev => { const next = [...prev]; next[i] = { ...next[i], ...updates }; return next })
   }
 
   const actualizarExtraCantidad = (i, cant) => {
@@ -194,12 +186,7 @@ export default function Insumos() {
     setExtras(prev => {
       const next = [...prev]
       const ex = next[i]
-      next[i] = {
-        ...ex,
-        valorUnitDisplay: raw ? formatMiles(raw) : '',
-        valorUnit: num,
-        subtotal: Math.round(parseFloat(ex.cantidad || 0) * num),
-      }
+      next[i] = { ...ex, valorUnitDisplay: raw ? formatMiles(raw) : '', valorUnit: num, subtotal: Math.round(parseFloat(ex.cantidad || 0) * num) }
       return next
     })
   }
@@ -208,12 +195,7 @@ export default function Insumos() {
     const num = raw ? parseInt(raw) : 0
     setExtras(prev => {
       const next = [...prev]
-      next[i] = {
-        ...next[i],
-        totalDirectoDisplay: raw ? formatMiles(raw) : '',
-        totalDirecto: num,
-        subtotal: num,
-      }
+      next[i] = { ...next[i], totalDirectoDisplay: raw ? formatMiles(raw) : '', totalDirecto: num, subtotal: num }
       return next
     })
   }
@@ -221,70 +203,121 @@ export default function Insumos() {
   const toggleModoExtra = (i) => {
     setExtras(prev => {
       const next = [...prev]
-      next[i] = {
-        ...next[i],
-        modoSimple: !next[i].modoSimple,
-        cantidad: '', valorUnitDisplay: '', valorUnit: 0,
-        subtotal: 0, totalDirectoDisplay: '', totalDirecto: 0,
-      }
+      next[i] = { ...next[i], modoSimple: !next[i].modoSimple, cantidad: '', valorUnitDisplay: '', valorUnit: 0, subtotal: 0, totalDirectoDisplay: '', totalDirecto: 0 }
       return next
     })
   }
 
   const quitarExtra = (i) => setExtras(prev => prev.filter((_, j) => j !== i))
 
-  // ── Totales ───────────────────────────────────────────────────────────────
+  // ── Guardar individual ───────────────────────────────────────────────────
 
-  const totalSeleccionados = Object.entries(filas)
-    .filter(([id]) => seleccionados[id])
-    .reduce((s, [, f]) => s + f.subtotal, 0)
-  const totalExtras = extras.reduce((s, ex) => s + ex.subtotal, 0)
-  const totalCompra = totalSeleccionados + totalExtras
-
-  // ── Guardar ───────────────────────────────────────────────────────────────
-
-  const guardarCompra = async () => {
-    const detalleSelected = catalogo
-      .filter(ins => seleccionados[ins.id] && filas[ins.id]?.subtotal > 0)
-      .map(ins => {
-        const f = filas[ins.id]
-        return f.modoSimple
-          ? { nombre_insumo: ins.nombre, cantidad: 1, unidad: f.unidad, valor_unitario: f.subtotal, subtotal: f.subtotal }
-          : { nombre_insumo: ins.nombre, cantidad: parseFloat(f.cantidad), unidad: f.unidad, valor_unitario: f.valorUnit, subtotal: f.subtotal }
-      })
-
-    const detalleExtras = extras
-      .filter(ex => ex.subtotal > 0 && ex.nombre.trim())
-      .map(ex => ex.modoSimple
-        ? { nombre_insumo: ex.nombre, cantidad: 1, unidad: ex.unidad, valor_unitario: ex.subtotal, subtotal: ex.subtotal }
-        : { nombre_insumo: ex.nombre, cantidad: parseFloat(ex.cantidad), unidad: ex.unidad, valor_unitario: ex.valorUnit, subtotal: ex.subtotal }
-      )
-
-    const detalle = [...detalleSelected, ...detalleExtras]
-    if (detalle.length === 0) return
-
-    setGuardando(true)
+  const guardarInsumoIndividual = async (insId, nombreInsumo, fila) => {
+    const subtotalFinal = fila.modoSimple ? fila.totalDirecto : fila.subtotal
+    if (subtotalFinal <= 0) {
+      mostrarToast('Ingresa cantidad y valor primero')
+      return
+    }
+    setFilas(prev => ({ ...prev, [insId]: { ...prev[insId], guardando: true } }))
     try {
-      await api.post('/insumos/compras', { fecha: fechaSeleccionada, notas: nota, detalle })
-      setConfirmacion({
-        total: totalCompra,
-        numItems: detalle.length,
-        hora: new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
+      const res = await fetch('/insumos/compras/item', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre_insumo: nombreInsumo,
+          cantidad: fila.modoSimple ? 1 : parseFloat(fila.cantidad) || 1,
+          unidad: fila.unidad,
+          valor_unitario: fila.modoSimple ? fila.totalDirecto : fila.valorUnit,
+          subtotal: subtotalFinal,
+          fecha: fechaSeleccionada,
+          notas: '',
+        }),
       })
-      setTimeout(() => setConfirmacion(null), 3000)
-      limpiarBorradorInsumos()
-      setSeleccionados({})
-      setFilas({})
-      setExtras([])
-      setNota('')
-      await cargarComprasDelDia(fechaSeleccionada)
-    } catch (e) {
-      setMsg('Error: ' + (e?.response?.data?.detail ?? e.message))
-      setTimeout(() => setMsg(''), 4000)
-    } finally {
-      setGuardando(false)
+      const data = await res.json()
+      if (data.ok) {
+        setFilas(prev => ({
+          ...prev,
+          [insId]: { ...prev[insId], estado: 'guardado', guardando: false, detalleId: data.detalle_id },
+        }))
+        mostrarToast(`✅ ${nombreInsumo} guardado`)
+        cargarComprasDelDia(fechaSeleccionada)
+      } else {
+        throw new Error(data.detail || 'Error')
+      }
+    } catch {
+      setFilas(prev => ({ ...prev, [insId]: { ...prev[insId], guardando: false } }))
+      mostrarToast(`❌ Error guardando ${nombreInsumo}`)
     }
   }
+
+  const guardarExtraIndividual = async (idx, extra) => {
+    const subtotalFinal = extra.modoSimple ? extra.totalDirecto : extra.subtotal
+    if (subtotalFinal <= 0 || !extra.nombre.trim()) {
+      mostrarToast('Ingresa nombre, cantidad y valor primero')
+      return
+    }
+    setExtras(prev => { const next = [...prev]; next[idx] = { ...next[idx], guardando: true }; return next })
+    try {
+      const res = await fetch('/insumos/compras/item', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre_insumo: extra.nombre,
+          cantidad: extra.modoSimple ? 1 : parseFloat(extra.cantidad) || 1,
+          unidad: extra.unidad,
+          valor_unitario: extra.modoSimple ? extra.totalDirecto : extra.valorUnit,
+          subtotal: subtotalFinal,
+          fecha: fechaSeleccionada,
+          notas: '',
+        }),
+      })
+      const data = await res.json()
+      if (data.ok) {
+        setExtras(prev => {
+          const next = [...prev]
+          next[idx] = { ...next[idx], estado: 'guardado', guardando: false, detalleId: data.detalle_id }
+          return next
+        })
+        mostrarToast(`✅ ${extra.nombre} guardado`)
+        cargarComprasDelDia(fechaSeleccionada)
+      } else {
+        throw new Error(data.detail || 'Error')
+      }
+    } catch {
+      setExtras(prev => { const next = [...prev]; next[idx] = { ...next[idx], guardando: false }; return next })
+      mostrarToast(`❌ Error guardando ${extra.nombre}`)
+    }
+  }
+
+  const guardarTodosPendientes = async () => {
+    const pendientesCatalogo = catalogo.filter(ins => {
+      const f = filas[ins.id]
+      return seleccionados[ins.id] && f?.estado === 'tentativo' && (f.modoSimple ? f.totalDirecto : f.subtotal) > 0
+    })
+    for (const ins of pendientesCatalogo) {
+      await guardarInsumoIndividual(ins.id, ins.nombre, filas[ins.id])
+    }
+    for (let i = 0; i < extras.length; i++) {
+      const ex = extras[i]
+      if (ex.estado === 'tentativo' && (ex.modoSimple ? ex.totalDirecto : ex.subtotal) > 0 && ex.nombre.trim()) {
+        await guardarExtraIndividual(i, ex)
+      }
+    }
+  }
+
+  // ── Totales ───────────────────────────────────────────────────────────────
+
+  const totalReal = Object.entries(filas)
+    .filter(([id, f]) => seleccionados[id] && f.estado === 'guardado')
+    .reduce((sum, [, f]) => sum + (f.modoSimple ? f.totalDirecto : f.subtotal), 0)
+    + extras.filter(e => e.estado === 'guardado').reduce((sum, e) => sum + e.subtotal, 0)
+
+  const totalTentativo = Object.entries(filas)
+    .filter(([id, f]) => seleccionados[id] && f.estado === 'tentativo')
+    .reduce((sum, [, f]) => sum + (f.modoSimple ? f.totalDirecto : f.subtotal), 0)
+    + extras.filter(e => e.estado === 'tentativo').reduce((sum, e) => sum + e.subtotal, 0)
+
+  const totalGeneral = totalReal + totalTentativo
 
   const tituloHistorial = fechaSeleccionada === hoy
     ? `Compras registradas hoy (${comprasHoy.length})`
@@ -308,18 +341,6 @@ export default function Insumos() {
       </div>
 
       {msg && <div className="insumos-msg">{msg}</div>}
-
-      {confirmacion && (
-        <div className="compra-confirmacion">
-          <div className="confirmacion-icon">✅</div>
-          <div className="confirmacion-titulo">Compra guardada</div>
-          <div className="confirmacion-hora">{confirmacion.hora}</div>
-          <div className="confirmacion-total">{formatCOP(confirmacion.total)}</div>
-          <div className="confirmacion-items">
-            {confirmacion.numItems} insumo{confirmacion.numItems !== 1 ? 's' : ''} registrado{confirmacion.numItems !== 1 ? 's' : ''}
-          </div>
-        </div>
-      )}
 
       {/* ── Chips grid ─────────────────────────────────────────────────────── */}
       <div className="insumos-chips-titulo">Toca los insumos que vas a comprar hoy</div>
@@ -347,29 +368,57 @@ export default function Insumos() {
       {catalogo
         .filter(ins => seleccionados[ins.id])
         .map(ins => {
-          const f = filas[ins.id] || {}
+          const fila = filas[ins.id] || {}
+          const esGuardado = fila.estado === 'guardado'
+          const valSubtotal = fila.modoSimple ? (fila.totalDirecto || 0) : (fila.subtotal || 0)
           return (
-            <div key={ins.id} className="insumo-detalle-card">
+            <div
+              key={ins.id}
+              className={`insumo-detalle-card ${esGuardado ? 'card-guardado' : 'card-tentativo'}`}
+            >
               <div className="insumo-detalle-header">
-                <span className="insumo-detalle-nombre">✓ {ins.nombre}</span>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    className={`btn-modo-mini${f.modoSimple ? ' modo-simple' : ''}`}
-                    onClick={() => toggleModoFila(ins.id)}
-                    title={f.modoSimple ? 'Modo detallado' : 'Modo simple'}
-                  >{f.modoSimple ? '💰' : '📊'}</button>
-                  <button className="btn-quitar-insumo" onClick={() => quitarSeleccionado(ins.id)}>×</button>
+                <span className={`insumo-detalle-nombre ${esGuardado ? 'nombre-verde' : ''}`}>
+                  ✓ {ins.nombre}
+                </span>
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  {esGuardado
+                    ? <span className="badge-guardado">✅ Pagado</span>
+                    : <span className="badge-tentativo">Tentativo</span>
+                  }
+                  {!esGuardado && (
+                    <button
+                      className={`btn-modo-mini${fila.modoSimple ? ' modo-simple' : ''}`}
+                      onClick={() => toggleModoFila(ins.id)}
+                      title={fila.modoSimple ? 'Modo detallado' : 'Modo simple'}
+                    >{fila.modoSimple ? '💰' : '📊'}</button>
+                  )}
+                  {!esGuardado && (
+                    <button className="btn-quitar-insumo" onClick={() => quitarSeleccionado(ins.id)}>×</button>
+                  )}
                 </div>
               </div>
 
-              {f.modoSimple ? (
+              {esGuardado ? (
+                <div className="insumo-guardado-datos">
+                  <div className="insumo-guardado-row">
+                    <span className="guardado-label">Cantidad</span>
+                    <span className="guardado-val">{fila.modoSimple ? 1 : fila.cantidad} {fila.unidad}</span>
+                  </div>
+                  <div className="insumo-guardado-row">
+                    <span className="guardado-label">Valor pagado</span>
+                    <span className="guardado-val verde">
+                      $ {formatMiles(fila.modoSimple ? fila.totalDirecto : fila.valorUnit)}
+                    </span>
+                  </div>
+                </div>
+              ) : fila.modoSimple ? (
                 <div className="insumo-campo-grupo">
                   <label>Total pagado</label>
                   <input
                     type="text"
                     inputMode="numeric"
                     className="insumo-input-grande gold"
-                    value={f.totalDirectoDisplay || ''}
+                    value={fila.totalDirectoDisplay || ''}
                     onChange={e => {
                       const raw = e.target.value.replace(/\./g, '').replace(/\D/g, '')
                       actualizarTotalDirecto(ins.id, raw)
@@ -385,7 +434,7 @@ export default function Insumos() {
                       type="number"
                       inputMode="decimal"
                       className="insumo-input-grande"
-                      value={f.cantidad || ''}
+                      value={fila.cantidad || ''}
                       onChange={e => actualizarCantidadFila(ins.id, e.target.value)}
                       placeholder="0"
                       min="0"
@@ -396,7 +445,7 @@ export default function Insumos() {
                     <label>Unidad</label>
                     <select
                       className="insumo-select"
-                      value={f.unidad || ins.unidad}
+                      value={fila.unidad || ins.unidad}
                       onChange={e => actualizarUnidadFila(ins.id, e.target.value)}
                     >
                       {UNIDADES.map(u => <option key={u}>{u}</option>)}
@@ -408,7 +457,7 @@ export default function Insumos() {
                       type="text"
                       inputMode="numeric"
                       className="insumo-input-grande gold"
-                      value={f.valorUnitDisplay || ''}
+                      value={fila.valorUnitDisplay || ''}
                       onChange={e => {
                         const raw = e.target.value.replace(/\./g, '').replace(/\D/g, '')
                         actualizarValorUnit(ins.id, raw)
@@ -419,96 +468,155 @@ export default function Insumos() {
                 </div>
               )}
 
-              <div className="insumo-subtotal-row">
-                <span>Subtotal</span>
-                <span className="insumo-subtotal-val">{f.subtotal > 0 ? formatMiles(f.subtotal) : '—'}</span>
+              <div className="insumo-card-footer">
+                <div>
+                  <div className="subtotal-label">{esGuardado ? 'Total pagado' : 'Subtotal'}</div>
+                  <div className={`insumo-subtotal-val ${esGuardado ? 'verde' : ''}`}>
+                    {valSubtotal > 0 ? formatMiles(valSubtotal) : '—'}
+                  </div>
+                </div>
+                {esGuardado ? (
+                  <button className="btn-ya-guardado" disabled>✓ Guardado</button>
+                ) : (
+                  <button
+                    className="btn-guardar-individual"
+                    onClick={() => guardarInsumoIndividual(ins.id, ins.nombre, fila)}
+                    disabled={fila.guardando || valSubtotal <= 0}
+                  >
+                    {fila.guardando ? 'Guardando...' : '💾 Guardar'}
+                  </button>
+                )}
               </div>
             </div>
           )
         })}
 
       {/* ── Extras ───────────────────────────────────────────────────────────── */}
-      {extras.map((ex, i) => (
-        <div key={`ex-${i}`} className="insumo-detalle-card insumo-card-extra">
-          <div className="insumo-detalle-header">
-            <input
-              className="insumo-nombre-extra"
-              value={ex.nombre}
-              onChange={e => actualizarExtra(i, { nombre: e.target.value })}
-              placeholder="Nombre del insumo"
-            />
-            <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-              <button
-                className={`btn-modo-mini${ex.modoSimple ? ' modo-simple' : ''}`}
-                onClick={() => toggleModoExtra(i)}
-              >{ex.modoSimple ? '💰' : '📊'}</button>
-              <button className="btn-quitar-insumo" onClick={() => quitarExtra(i)}>×</button>
-            </div>
-          </div>
-
-          {ex.modoSimple ? (
-            <div className="insumo-campo-grupo">
-              <label>Total pagado</label>
-              <input
-                type="text"
-                inputMode="numeric"
-                className="insumo-input-grande gold"
-                value={ex.totalDirectoDisplay || ''}
-                onChange={e => {
-                  const raw = e.target.value.replace(/\./g, '').replace(/\D/g, '')
-                  actualizarExtraTotalDirecto(i, raw)
-                }}
-                placeholder="$ 0"
-              />
-            </div>
-          ) : (
-            <div className="insumo-campos-detalle">
-              <div className="insumo-campo-grupo">
-                <label>Cantidad</label>
+      {extras.map((ex, i) => {
+        const esGuardado = ex.estado === 'guardado'
+        const valSubtotal = ex.modoSimple ? (ex.totalDirecto || 0) : (ex.subtotal || 0)
+        return (
+          <div key={`ex-${i}`} className={`insumo-detalle-card insumo-card-extra ${esGuardado ? 'card-guardado' : ''}`}>
+            <div className="insumo-detalle-header">
+              {esGuardado ? (
+                <span className="insumo-detalle-nombre nombre-verde">✓ {ex.nombre}</span>
+              ) : (
                 <input
-                  type="number"
-                  inputMode="decimal"
-                  className="insumo-input-grande"
-                  value={ex.cantidad || ''}
-                  onChange={e => actualizarExtraCantidad(i, e.target.value)}
-                  placeholder="0"
-                  min="0"
-                  step="0.5"
+                  className="insumo-nombre-extra"
+                  value={ex.nombre}
+                  onChange={e => actualizarExtra(i, { nombre: e.target.value })}
+                  placeholder="Nombre del insumo"
                 />
+              )}
+              <div style={{ display: 'flex', gap: '6px', flexShrink: 0, alignItems: 'center' }}>
+                {esGuardado
+                  ? <span className="badge-guardado">✅ Pagado</span>
+                  : <span className="badge-tentativo">Tentativo</span>
+                }
+                {!esGuardado && (
+                  <button
+                    className={`btn-modo-mini${ex.modoSimple ? ' modo-simple' : ''}`}
+                    onClick={() => toggleModoExtra(i)}
+                  >{ex.modoSimple ? '💰' : '📊'}</button>
+                )}
+                {!esGuardado && (
+                  <button className="btn-quitar-insumo" onClick={() => quitarExtra(i)}>×</button>
+                )}
               </div>
-              <div className="insumo-campo-grupo">
-                <label>Unidad</label>
-                <select
-                  className="insumo-select"
-                  value={ex.unidad}
-                  onChange={e => actualizarExtra(i, { unidad: e.target.value })}
-                >
-                  {UNIDADES.map(u => <option key={u}>{u}</option>)}
-                </select>
+            </div>
+
+            {esGuardado ? (
+              <div className="insumo-guardado-datos">
+                <div className="insumo-guardado-row">
+                  <span className="guardado-label">Cantidad</span>
+                  <span className="guardado-val">{ex.modoSimple ? 1 : ex.cantidad} {ex.unidad}</span>
+                </div>
+                <div className="insumo-guardado-row">
+                  <span className="guardado-label">Valor pagado</span>
+                  <span className="guardado-val verde">
+                    $ {formatMiles(ex.modoSimple ? ex.totalDirecto : ex.valorUnit)}
+                  </span>
+                </div>
               </div>
+            ) : ex.modoSimple ? (
               <div className="insumo-campo-grupo">
-                <label>Valor unitario</label>
+                <label>Total pagado</label>
                 <input
                   type="text"
                   inputMode="numeric"
                   className="insumo-input-grande gold"
-                  value={ex.valorUnitDisplay || ''}
+                  value={ex.totalDirectoDisplay || ''}
                   onChange={e => {
                     const raw = e.target.value.replace(/\./g, '').replace(/\D/g, '')
-                    actualizarExtraValorUnit(i, raw)
+                    actualizarExtraTotalDirecto(i, raw)
                   }}
                   placeholder="$ 0"
                 />
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="insumo-campos-detalle">
+                <div className="insumo-campo-grupo">
+                  <label>Cantidad</label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    className="insumo-input-grande"
+                    value={ex.cantidad || ''}
+                    onChange={e => actualizarExtraCantidad(i, e.target.value)}
+                    placeholder="0"
+                    min="0"
+                    step="0.5"
+                  />
+                </div>
+                <div className="insumo-campo-grupo">
+                  <label>Unidad</label>
+                  <select
+                    className="insumo-select"
+                    value={ex.unidad}
+                    onChange={e => actualizarExtra(i, { unidad: e.target.value })}
+                  >
+                    {UNIDADES.map(u => <option key={u}>{u}</option>)}
+                  </select>
+                </div>
+                <div className="insumo-campo-grupo">
+                  <label>Valor unitario</label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    className="insumo-input-grande gold"
+                    value={ex.valorUnitDisplay || ''}
+                    onChange={e => {
+                      const raw = e.target.value.replace(/\./g, '').replace(/\D/g, '')
+                      actualizarExtraValorUnit(i, raw)
+                    }}
+                    placeholder="$ 0"
+                  />
+                </div>
+              </div>
+            )}
 
-          <div className="insumo-subtotal-row">
-            <span>Subtotal</span>
-            <span className="insumo-subtotal-val">{ex.subtotal > 0 ? formatMiles(ex.subtotal) : '—'}</span>
+            <div className="insumo-card-footer">
+              <div>
+                <div className="subtotal-label">{esGuardado ? 'Total pagado' : 'Subtotal'}</div>
+                <div className={`insumo-subtotal-val ${esGuardado ? 'verde' : ''}`}>
+                  {valSubtotal > 0 ? formatMiles(valSubtotal) : '—'}
+                </div>
+              </div>
+              {esGuardado ? (
+                <button className="btn-ya-guardado" disabled>✓ Guardado</button>
+              ) : (
+                <button
+                  className="btn-guardar-individual"
+                  onClick={() => guardarExtraIndividual(i, ex)}
+                  disabled={ex.guardando || valSubtotal <= 0}
+                >
+                  {ex.guardando ? 'Guardando...' : '💾 Guardar'}
+                </button>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        )
+      })}
 
       {/* ── Nota ─────────────────────────────────────────────────────────────── */}
       <div className="insumo-nota-row">
@@ -520,18 +628,33 @@ export default function Insumos() {
         />
       </div>
 
-      {/* ── Footer total ────────────────────────────────────────────────────── */}
-      <div className="insumos-footer">
-        <div className="insumos-total-label">TOTAL COMPRA</div>
-        <div className="insumos-total-valor">{formatCOP(totalCompra)}</div>
-        <button
-          className="btn-guardar-compra"
-          onClick={guardarCompra}
-          disabled={totalCompra === 0 || guardando}
-        >
-          {guardando ? 'Guardando...' : 'Guardar compra'}
-        </button>
-      </div>
+      {/* ── Box de totales ───────────────────────────────────────────────────── */}
+      {(Object.keys(seleccionados).length > 0 || extras.length > 0) && (
+        <div className="insumos-totales-box">
+          {totalReal > 0 && (
+            <div className="total-row-real">
+              <div className="total-row-label verde">✅ Comprado y pagado</div>
+              <div className="total-row-valor verde">$ {formatMiles(totalReal)}</div>
+            </div>
+          )}
+          {totalTentativo > 0 && (
+            <div className="total-row-tent">
+              <div className="total-row-label gold">🟡 Por comprar</div>
+              <div className="total-row-valor gold">$ {formatMiles(totalTentativo)}</div>
+            </div>
+          )}
+          {totalReal > 0 && totalTentativo > 0 && <div className="total-separador" />}
+          <div className="total-row-general">
+            <div className="total-general-label">TOTAL ESTIMADO</div>
+            <div className="total-general-valor">$ {formatMiles(totalGeneral)}</div>
+          </div>
+          {totalTentativo > 0 && (
+            <button className="btn-guardar-pendientes" onClick={guardarTodosPendientes}>
+              💾 Guardar todos los pendientes
+            </button>
+          )}
+        </div>
+      )}
 
       {/* ── Historial del día ────────────────────────────────────────────────── */}
       <div className="compras-historial">

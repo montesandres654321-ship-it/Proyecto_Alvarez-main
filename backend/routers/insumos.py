@@ -143,6 +143,58 @@ def registrar_compra(body: CompraIn):
     return {"id": compra_id, "total": total, "num_items": len(body.detalle)}
 
 
+class InsumoIndividualIn(BaseModel):
+    nombre_insumo: str
+    cantidad: float
+    unidad: str
+    valor_unitario: int
+    subtotal: int
+    fecha: str
+    notas: str = ""
+
+
+@router.post("/compras/item")
+@router.post("/compras/item/")
+def guardar_insumo_individual(body: InsumoIndividualIn):
+    with persistencia.conexion() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT id, total FROM compras WHERE fecha = %s ORDER BY id DESC LIMIT 1",
+                (body.fecha,),
+            )
+            compra = cur.fetchone()
+            if compra:
+                compra_id = compra["id"]
+                cur.execute(
+                    "UPDATE compras SET total = %s WHERE id = %s",
+                    (compra["total"] + body.subtotal, compra_id),
+                )
+            else:
+                cur.execute(
+                    "INSERT INTO compras (fecha, total, notas) VALUES (%s, %s, %s) RETURNING id",
+                    (body.fecha, body.subtotal, body.notas or None),
+                )
+                compra_id = cur.fetchone()["id"]
+
+            cur.execute(
+                """
+                INSERT INTO compras_detalle
+                  (compra_id, nombre_insumo, cantidad, unidad, valor_unitario, subtotal)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING id
+                """,
+                (compra_id, body.nombre_insumo, body.cantidad, body.unidad, body.valor_unitario, body.subtotal),
+            )
+            detalle_id = cur.fetchone()["id"]
+
+            cur.execute(
+                "UPDATE insumos_catalogo SET precio_ref = %s WHERE nombre = %s AND activo = 1",
+                (body.valor_unitario, body.nombre_insumo),
+            )
+
+    return {"ok": True, "compra_id": compra_id, "detalle_id": detalle_id, "mensaje": f"{body.nombre_insumo} guardado"}
+
+
 @router.get("/compras")
 def listar_compras(fecha: str = None):
     if fecha is None:
