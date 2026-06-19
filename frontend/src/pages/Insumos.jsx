@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import api, { formatCOP } from '../api/client'
 import { formatMiles } from '../utils/formatMiles'
+import { guardarBorradorInsumos, cargarBorradorInsumos, limpiarBorradorInsumos } from '../utils/persistencia'
 import DatePicker from '../components/DatePicker'
 import './Insumos.css'
 
@@ -41,6 +42,12 @@ export default function Insumos() {
   const [comprasHoy, setComprasHoy]     = useState([])
   const [expandida, setExpandida]       = useState(null)
   const [confirmacion, setConfirmacion] = useState(null)
+  const [toast, setToast]               = useState('')
+
+  const mostrarToast = (msg) => {
+    setToast(msg)
+    setTimeout(() => setToast(''), 3000)
+  }
 
   const cargarCatalogo = async () => {
     try {
@@ -59,7 +66,27 @@ export default function Insumos() {
   useEffect(() => {
     cargarCatalogo()
     cargarComprasDelDia(hoy)
+    // Restaurar borrador si existe
+    const borrador = cargarBorradorInsumos()
+    if (borrador) {
+      setSeleccionados(borrador.seleccionados || {})
+      setFilas(borrador.filas || {})
+      setExtras(borrador.extras || [])
+      setNota(borrador.nota || '')
+      if (borrador.fecha) setFechaSeleccionada(borrador.fecha)
+      mostrarToast('Borrador de compra restaurado 📋')
+    }
   }, [])
+
+  // Auto-guardar borrador cuando cambian los datos
+  useEffect(() => {
+    const tieneDatos = Object.keys(seleccionados).length > 0 || extras.length > 0
+    if (!tieneDatos) {
+      limpiarBorradorInsumos()
+      return
+    }
+    guardarBorradorInsumos({ seleccionados, filas, extras, nota, fecha: fechaSeleccionada })
+  }, [seleccionados, filas, extras, nota])
 
   // ── Chips ────────────────────────────────────────────────────────────────
 
@@ -245,6 +272,7 @@ export default function Insumos() {
         hora: new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
       })
       setTimeout(() => setConfirmacion(null), 3000)
+      limpiarBorradorInsumos()
       setSeleccionados({})
       setFilas({})
       setExtras([])
@@ -544,6 +572,8 @@ export default function Insumos() {
           </p>
         )}
       </div>
+
+      {toast && <div className="toast-restaurado">{toast}</div>}
     </div>
   )
 }

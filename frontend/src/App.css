@@ -1,3 +1,32 @@
+.app-verificando {
+  min-height: 100dvh;
+  background: var(--bg-base);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.verificando-logo {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 3px solid var(--red);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.verificando-texto {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
 .app-shell {
   display: flex;
   flex-direction: column;

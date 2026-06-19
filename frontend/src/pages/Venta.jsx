@@ -9,6 +9,8 @@ import ModalPreparacion from '../components/ModalPreparacion'
 import ModalPrecioEspecial from '../components/ModalPrecioEspecial'
 import ModalPagoCredito from '../components/ModalPagoCredito'
 import { OPCIONES_DEFAULT } from '../utils/opcionesDefault'
+import { guardarCarrito, cargarCarrito, limpiarCarrito } from '../utils/persistencia'
+import { apiFetch } from '../utils/api'
 import { formatCOP } from '../api/client'
 import api from '../api/client'
 import './Venta.css'
@@ -16,8 +18,9 @@ import './Venta.css'
 export default function Venta() {
   const {
     mesaActual, mesas, domicilios, productos, categorias, categoriaActiva,
-    setCategoriaActiva, cargarProductos, cargarMesa,
+    setCategoriaActiva, cargarProductos, cargarMesa, setMesaActual,
     agregarItem, agregarItemCustom, quitarItem, cobrar, nequiNumero, eliminarDomicilio,
+    usuarioId,
   } = usePOSStore()
 
   const [modalCobro, setModalCobro]         = useState(false)
@@ -31,6 +34,12 @@ export default function Venta() {
   const [prepConfig, setPrepConfig]         = useState({})
   const [creditos, setCreditos]             = useState([])
   const [modalPago, setModalPago]           = useState(null)
+  const [toast, setToast]                   = useState('')
+
+  const mostrarToast = (msg) => {
+    setToast(msg)
+    setTimeout(() => setToast(''), 3000)
+  }
 
   const verificarTurno = async () => {
     try {
@@ -45,11 +54,27 @@ export default function Venta() {
 
   const cargarCreditos = async () => {
     try {
-      const res = await fetch('/creditos')
+      const res = await apiFetch('/creditos')
       const data = await res.json()
       setCreditos(Array.isArray(data) ? data : [])
     } catch {}
   }
+
+  // Al montar: restaurar última mesa del usuario
+  useEffect(() => {
+    if (!usuarioId) return
+    const borrador = cargarCarrito(usuarioId)
+    if (borrador?.mesa) {
+      setMesaActual(borrador.mesa)
+      mostrarToast('Carrito restaurado 🛒')
+    }
+  }, [usuarioId])
+
+  // Al cambiar mesa: guardar selección
+  useEffect(() => {
+    if (!usuarioId) return
+    guardarCarrito(usuarioId, { mesa: mesaActual })
+  }, [mesaActual, usuarioId])
 
   useEffect(() => {
     const init = async () => {
@@ -74,7 +99,6 @@ export default function Venta() {
     ? productos.filter((p) => p.categoria === categoriaActiva)
     : productos
 
-  // Opciones efectivas: BD si disponibles, sino defaults
   const opcionesPara = (cat) =>
     prepConfig[cat] ?? OPCIONES_DEFAULT[cat] ?? []
 
@@ -118,9 +142,8 @@ export default function Venta() {
     const factura = await cobrar(mesaActual, metodo, tipo, telefono, montoRecibido, nombreCliente)
     if (metodo === 'Crédito' && factura?.id_factura) {
       try {
-        await fetch('/creditos', {
+        await apiFetch('/creditos', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             id_factura: factura.id_factura,
             nombre_cliente: nombreCliente,
@@ -132,6 +155,8 @@ export default function Venta() {
       } catch {}
     }
     if (slot) eliminarDomicilio(mesaActual)
+    // Limpiar borrador de mesa al confirmar venta
+    if (usuarioId) limpiarCarrito(usuarioId)
     setModalCobro(false)
     setVentaConfirmada(factura)
     verificarTurno()
@@ -275,6 +300,10 @@ export default function Venta() {
           onPago={() => { setModalPago(null); cargarCreditos() }}
           onCerrar={() => setModalPago(null)}
         />
+      )}
+
+      {toast && (
+        <div className="toast-restaurado">{toast}</div>
       )}
     </div>
   )

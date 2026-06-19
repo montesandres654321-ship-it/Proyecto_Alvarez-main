@@ -419,3 +419,25 @@
     padding: 10px 8px;
   }
 }
+
+.toast-restaurado {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #0f2010;
+  border: 1px solid #22c55e;
+  color: #4ade80;
+  padding: 10px 20px;
+  border-radius: 99px;
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 9999;
+  animation: fadeInToast 200ms ease;
+  white-space: nowrap;
+}
+
+@keyframes fadeInToast {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}

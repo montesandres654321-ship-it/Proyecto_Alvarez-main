@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import usePOSStore from './store/usePOSStore'
 import { setPinHeader } from './api/client'
 import TopBar from './components/TopBar'
@@ -52,13 +52,39 @@ function WSManager() {
   return null
 }
 
-export default function App() {
-  const { cargarConfig, rol, pinSesion } = usePOSStore()
+function AppInner() {
+  const { token, setSession, cerrarSesion, cargarConfig } = usePOSStore()
+  const navigate = useNavigate()
+  const [verificando, setVerificando] = useState(true)
+
   useEffect(() => {
     cargarConfig()
-    if (rol === 'admin' && pinSesion) {
-      setPinHeader(pinSesion)
+
+    const verificarSesion = async () => {
+      if (!token) {
+        setVerificando(false)
+        return
+      }
+      try {
+        const res = await fetch('/auth/me', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        })
+        if (res.ok) {
+          const data = await res.json()
+          setSession(token, data.usuario)
+        } else {
+          await cerrarSesion()
+          navigate('/login')
+        }
+      } catch (_) {
+        // Sin conexión — mantener sesión local
+        console.log('Sin conexión, sesión local mantenida')
+      } finally {
+        setVerificando(false)
+      }
     }
+
+    verificarSesion()
   }, [])
 
   useEffect(() => {
@@ -70,8 +96,17 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState)
   }, [])
 
+  if (verificando) {
+    return (
+      <div className="app-verificando">
+        <img src="/pwa-192.png" className="verificando-logo" alt="Alvarez Fast Food" />
+        <div className="verificando-texto">Alvarez Fast Food</div>
+      </div>
+    )
+  }
+
   return (
-    <BrowserRouter>
+    <>
       <WSManager />
       <div className="app-shell">
         <TopBar />
@@ -120,6 +155,14 @@ export default function App() {
         </div>
         <StatusBar />
       </div>
+    </>
+  )
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppInner />
     </BrowserRouter>
   )
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import api, { formatCOP } from '../api/client'
 import DatePicker from '../components/DatePicker'
 import { formatMiles, parseMiles } from '../utils/formatMiles'
+import { guardarBorradorNomina, cargarBorradorNomina, limpiarBorradorNomina } from '../utils/persistencia'
 import './Nomina.css'
 
 function formatFecha(iso) {
@@ -32,6 +33,12 @@ export default function Nomina() {
   const [msg, setMsg]                     = useState('')
   const [tarifasEdit, setTarifasEdit]     = useState({})
   const [editandoTarifa, setEditandoTarifa] = useState(null)
+  const [toast, setToast]                   = useState('')
+
+  const mostrarToast = (msg) => {
+    setToast(msg)
+    setTimeout(() => setToast(''), 3000)
+  }
 
   const cargarDatos = async () => {
     try {
@@ -53,7 +60,25 @@ export default function Nomina() {
   useEffect(() => {
     cargarDatos()
     cargarHistorial()
+    // Restaurar borrador si existe
+    const borrador = cargarBorradorNomina()
+    if (borrador) {
+      if (borrador.diasSeleccionados) setDiasSeleccionados(borrador.diasSeleccionados)
+      if (borrador.asistencia) setAsistencia(borrador.asistencia)
+      if (borrador.tarifasEdit) setTarifasEdit(borrador.tarifasEdit)
+      mostrarToast('Borrador de nómina restaurado 👥')
+    }
   }, [])
+
+  // Auto-guardar borrador cuando cambia asistencia
+  useEffect(() => {
+    const tieneAsistencia = Object.values(asistencia).some(dias => dias.length > 0)
+    if (!tieneAsistencia) {
+      limpiarBorradorNomina()
+      return
+    }
+    guardarBorradorNomina({ diasSeleccionados, asistencia, tarifasEdit })
+  }, [diasSeleccionados, asistencia, tarifasEdit])
 
   const toggleDia = (fecha) => {
     setDiasSeleccionados(prev => {
@@ -150,6 +175,7 @@ export default function Nomina() {
       })
 
       if (estado === 'pagada') {
+        limpiarBorradorNomina()
         setConfirmacion({
           total: totalNomina,
           hora: new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
@@ -369,6 +395,8 @@ export default function Nomina() {
           </>
         )}
       </div>
+
+      {toast && <div className="toast-restaurado">{toast}</div>}
     </div>
   )
 }

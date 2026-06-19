@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import usePOSStore from '../store/usePOSStore'
-import { setPinHeader } from '../api/client'
 import './Login.css'
 
 export default function Login() {
@@ -9,7 +8,7 @@ export default function Login() {
   const [pin, setPin] = useState('')
   const [error, setError] = useState('')
   const [cargando, setCargando] = useState(false)
-  const { setRol } = usePOSStore()
+  const { setSession } = usePOSStore()
   const navigate = useNavigate()
 
   const handleLogin = async (pinActual) => {
@@ -21,7 +20,10 @@ export default function Login() {
       const res = await fetch('/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pin: pinUsado }),
+        body: JSON.stringify({
+          pin: pinUsado,
+          dispositivo: navigator.userAgent,
+        }),
       })
       const data = await res.json()
 
@@ -32,21 +34,14 @@ export default function Login() {
         return
       }
 
-      if (modo === 'admin' && data.rol !== 'admin') {
+      if (modo === 'admin' && data.usuario.rol !== 'admin') {
         setError('PIN incorrecto para Administrador')
         setPin('')
         setCargando(false)
         return
       }
-      if (modo === 'cajero' && data.rol === null) {
-        setError('PIN incorrecto')
-        setPin('')
-        setCargando(false)
-        return
-      }
 
-      if (data.rol === 'admin') setPinHeader(pinUsado)
-      setRol(data.rol, pinUsado)
+      setSession(data.token, data.usuario)
       navigate('/ventas')
     } catch {
       setError('Error de conexión')

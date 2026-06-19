@@ -23,11 +23,19 @@ function mergeItems(mesaData) {
   return { ...mesaData, items: merged }
 }
 
+const _parseUsuario = () => {
+  try {
+    return JSON.parse(localStorage.getItem('session_usuario') || 'null')
+  } catch { return null }
+}
+
+const _usuarioInicial = _parseUsuario()
+
 const usePOSStore = create((set, get) => ({
   // ── Estado ─────────────────────────────────────────────────────────────
   mesaActual: '1',
-  mesas: {},          // { [mesa_id]: MesaEstadoOut }
-  domicilios: [],     // [{ id, nombre, telefono }]
+  mesas: {},
+  domicilios: [],
   productos: [],
   categorias: [],
   categoriaActiva: null,
@@ -38,36 +46,47 @@ const usePOSStore = create((set, get) => ({
   pinAdmin: null,
 
   // ── Autenticación ───────────────────────────────────────────────────────
-  rol: localStorage.getItem('rol_actual') || null,
-  pinSesion: sessionStorage.getItem('pin_sesion') || null,
+  token: localStorage.getItem('session_token') || null,
+  usuario: _usuarioInicial,
+  // rol como propiedad de estado para compatibilidad con RutaProtegida
+  rol: _usuarioInicial?.rol || null,
+  pinSesion: null,
 
-  setRol: (rol, pin) => {
-    if (rol) {
-      localStorage.setItem('rol_actual', rol)
-    } else {
-      localStorage.removeItem('rol_actual')
+  setSession: (token, usuario) => {
+    localStorage.setItem('session_token', token)
+    localStorage.setItem('session_usuario', JSON.stringify(usuario))
+    set({ token, usuario, rol: usuario?.rol || null })
+  },
+
+  cerrarSesion: async () => {
+    const token = get().token
+    if (token) {
+      try {
+        await fetch('/auth/logout', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+        })
+      } catch (_) {}
     }
-    if (pin) {
-      sessionStorage.setItem('pin_sesion', pin)
-    } else {
-      sessionStorage.removeItem('pin_sesion')
-    }
-    set({ rol, pinSesion: pin || null })
+    localStorage.removeItem('session_token')
+    localStorage.removeItem('session_usuario')
+    set({ token: null, usuario: null, rol: null })
   },
 
-  cerrarSesion: () => {
-    localStorage.removeItem('rol_actual')
-    sessionStorage.removeItem('pin_sesion')
-    set({ rol: null, pinSesion: null })
+  authHeaders: () => {
+    const token = get().token
+    return token
+      ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+      : { 'Content-Type': 'application/json' }
   },
 
-  get esAdmin() {
-    return get().rol === 'admin'
-  },
+  get esAdmin() { return get().rol === 'admin' },
+  get esCajero() { return get().rol === 'cajero' || get().rol === 'admin' },
+  get nombreUsuario() { return get().usuario?.nombre || '' },
+  get usuarioId() { return get().usuario?.id || null },
 
-  get esCajero() {
-    return get().rol === 'cajero' || get().rol === 'admin'
-  },
+  // Compat: setRol mantenido para código antiguo
+  setRol: (_rol, _pin) => {},
 
   // ── Acciones ────────────────────────────────────────────────────────────
   setMesaActual: (id) => set({ mesaActual: id }),
