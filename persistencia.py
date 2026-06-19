@@ -389,6 +389,20 @@ def _crear_base_y_tablas() -> None:
       )
       cur.execute(
         """
+        INSERT INTO usuarios (nombre, pin, rol)
+        SELECT 'Cajero',
+          COALESCE(
+            (SELECT valor FROM configuracion
+             WHERE clave = 'pin_cajero'), '0000'
+          ),
+          'cajero'
+        WHERE NOT EXISTS (
+          SELECT 1 FROM usuarios WHERE rol = 'cajero'
+        )
+        """
+      )
+      cur.execute(
+        """
         CREATE TABLE IF NOT EXISTS categorias_gasto (
           id     SERIAL       PRIMARY KEY,
           nombre VARCHAR(100) NOT NULL UNIQUE,
