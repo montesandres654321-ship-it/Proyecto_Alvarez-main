@@ -195,3 +195,22 @@
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+@media (max-width: 380px) {
+  .pin-teclado {
+    max-width: 230px;
+    gap: 8px;
+  }
+  .pin-key {
+    font-size: 18px;
+  }
+  .btn-ingresar {
+    max-width: 230px;
+  }
+  .btn-rol {
+    padding: 12px 14px;
+  }
+  .login-titulo {
+    font-size: 20px;
+  }
+}

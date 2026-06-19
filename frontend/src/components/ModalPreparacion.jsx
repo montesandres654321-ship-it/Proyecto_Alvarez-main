@@ -34,41 +34,43 @@ export default function ModalPreparacion({ producto, opciones, onAgregar, onCerr
           </div>
         </div>
 
-        {opciones.length > 0 && (
-          <div className="modal-prep-section">
-            <div className="modal-prep-label">¿CÓMO LO PREPARO?</div>
-            <div className="modal-prep-opciones">
-              {opciones.map((op) => (
-                <button
-                  key={op}
-                  className={`prep-opcion${seleccionadas.includes(op) ? ' activa' : ''}`}
-                  onClick={() => toggleOpcion(op)}
-                >
-                  {seleccionadas.includes(op) ? '✓ ' : ''}{op}
-                </button>
-              ))}
+        <div className="modal-prep-scroll">
+          {opciones.length > 0 && (
+            <div className="modal-prep-section">
+              <div className="modal-prep-label">¿CÓMO LO PREPARO?</div>
+              <div className="modal-prep-opciones">
+                {opciones.map((op) => (
+                  <button
+                    key={op}
+                    className={`prep-opcion${seleccionadas.includes(op) ? ' activa' : ''}`}
+                    onClick={() => toggleOpcion(op)}
+                  >
+                    {seleccionadas.includes(op) ? '✓ ' : ''}{op}
+                  </button>
+                ))}
+              </div>
             </div>
+          )}
+
+          <div className="modal-prep-section">
+            <div className="modal-prep-label">NOTA ADICIONAL (opcional)</div>
+            <textarea
+              className="modal-prep-nota"
+              placeholder="Ej: bien cocido, extra papas, sin cebolla..."
+              value={nota}
+              onChange={(e) => setNota(e.target.value)}
+              rows={2}
+              maxLength={120}
+            />
           </div>
-        )}
 
-        <div className="modal-prep-section">
-          <div className="modal-prep-label">NOTA ADICIONAL (opcional)</div>
-          <textarea
-            className="modal-prep-nota"
-            placeholder="Ej: bien cocido, extra papas, sin cebolla..."
-            value={nota}
-            onChange={(e) => setNota(e.target.value)}
-            rows={2}
-            maxLength={120}
-          />
-        </div>
-
-        <div className="modal-prep-section modal-prep-cantidad-row">
-          <div className="modal-prep-label">CANTIDAD</div>
-          <div className="cantidad-control">
-            <button onClick={() => setCantidad((c) => Math.max(1, c - 1))}>−</button>
-            <span>{cantidad}</span>
-            <button onClick={() => setCantidad((c) => Math.min(20, c + 1))}>+</button>
+          <div className="modal-prep-section modal-prep-cantidad-row">
+            <div className="modal-prep-label">CANTIDAD</div>
+            <div className="cantidad-control">
+              <button onClick={() => setCantidad((c) => Math.max(1, c - 1))}>−</button>
+              <span>{cantidad}</span>
+              <button onClick={() => setCantidad((c) => Math.min(20, c + 1))}>+</button>
+            </div>
           </div>
         </div>
 

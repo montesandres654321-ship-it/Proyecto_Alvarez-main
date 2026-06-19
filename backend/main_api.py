@@ -80,7 +80,9 @@ app.add_middleware(
 async def pin_middleware(request: Request, call_next):
     if request.url.path.startswith("/admin"):
         from persistencia import get_config
-        pin_correcto = get_config("pin_admin", "1234")
+        from backend.routers.auth import get_usuario_por_token
+
+        pin_correcto = await asyncio.to_thread(get_config, "pin_admin", "1234")
 
         # Legacy: X-PIN header
         if request.headers.get("X-PIN", "") == pin_correcto:
@@ -90,8 +92,7 @@ async def pin_middleware(request: Request, call_next):
         auth_header = request.headers.get("Authorization", "")
         if auth_header.startswith("Bearer "):
             token = auth_header[7:]
-            from backend.routers.auth import get_usuario_por_token
-            usuario = get_usuario_por_token(token)
+            usuario = await asyncio.to_thread(get_usuario_por_token, token)
             if usuario and usuario.get("rol") == "admin":
                 return await call_next(request)
 

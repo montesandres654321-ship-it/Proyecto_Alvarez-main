@@ -157,3 +157,11 @@
 }
 .btn-ir-nomina:hover { background: #0f0f2a; }
 .btn-ir-reportes:hover { color: var(--text-secondary); }
+
+@media (max-width: 480px) {
+  .modal-caja-box {
+    max-height: calc(100dvh - 16px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}

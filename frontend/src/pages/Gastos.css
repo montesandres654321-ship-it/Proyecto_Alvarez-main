@@ -90,6 +90,18 @@
   margin-bottom: 16px;
 }
 
+@media (max-width: 360px) {
+  .gastos-resumen {
+    grid-template-columns: 1fr 1fr;
+  }
+  .gastos-resumen-card:first-child {
+    grid-column: span 2;
+  }
+  .gastos-resumen-valor {
+    font-size: 14px;
+  }
+}
+
 .gastos-resumen-card {
   background: var(--bg-surface);
   border: 1px solid var(--border-default);

@@ -2,6 +2,11 @@
   max-width: 900px;
   margin: 0 auto;
   padding: 24px 20px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: 100%;
+  box-sizing: border-box;
+  padding-bottom: 40px;
 }
 
 .nomina-header {
@@ -281,6 +286,7 @@
   justify-content: flex-end;
   padding: 16px 0;
   border-top: 1px solid var(--border-default);
+  flex-wrap: wrap;
 }
 .btn-guardar-nomina {
   padding: 12px 24px;

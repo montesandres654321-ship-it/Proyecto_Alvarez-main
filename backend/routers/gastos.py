@@ -15,7 +15,7 @@ router = APIRouter(prefix="/gastos", tags=["gastos"])
 # ── CATEGORÍAS ────────────────────────────────────────────────────────────────
 
 @router.get("/categorias")
-async def listar_categorias():
+def listar_categorias():
     conn = persistencia.get_connection()
     try:
         cur = conn.cursor()
@@ -39,7 +39,7 @@ class CategoriaIn(BaseModel):
 
 
 @router.post("/categorias")
-async def crear_categoria(body: CategoriaIn):
+def crear_categoria(body: CategoriaIn):
     conn = persistencia.get_connection()
     try:
         cur = conn.cursor()
@@ -66,7 +66,7 @@ class CategoriaUpdate(BaseModel):
 
 
 @router.put("/categorias/{cat_id}")
-async def editar_categoria(cat_id: int, body: CategoriaUpdate):
+def editar_categoria(cat_id: int, body: CategoriaUpdate):
     conn = persistencia.get_connection()
     try:
         cur = conn.cursor()
@@ -95,7 +95,7 @@ async def editar_categoria(cat_id: int, body: CategoriaUpdate):
 
 
 @router.delete("/categorias/{cat_id}")
-async def eliminar_categoria(cat_id: int):
+def eliminar_categoria(cat_id: int):
     conn = persistencia.get_connection()
     try:
         cur = conn.cursor()
@@ -113,7 +113,7 @@ async def eliminar_categoria(cat_id: int):
 # ── RESUMEN (debe ir ANTES de /{gasto_id} para evitar conflicto de rutas) ────
 
 @router.get("/resumen")
-async def resumen_gastos(
+def resumen_gastos(
     mes: Optional[int] = None,
     anio: Optional[int] = None,
     desde: Optional[str] = None,
@@ -179,7 +179,7 @@ async def resumen_gastos(
 
 @router.get("")
 @router.get("/")
-async def listar_gastos(
+def listar_gastos(
     mes: Optional[int] = None,
     anio: Optional[int] = None,
     categoria_id: Optional[int] = None,
@@ -232,7 +232,7 @@ class GastoIn(BaseModel):
 
 @router.post("")
 @router.post("/")
-async def crear_gasto(body: GastoIn):
+def crear_gasto(body: GastoIn):
     conn = persistencia.get_connection()
     try:
         cur = conn.cursor()
@@ -287,7 +287,7 @@ class GastoUpdate(BaseModel):
 
 
 @router.put("/{gasto_id}")
-async def editar_gasto(gasto_id: int, body: GastoUpdate):
+def editar_gasto(gasto_id: int, body: GastoUpdate):
     conn = persistencia.get_connection()
     try:
         cur = conn.cursor()
@@ -338,7 +338,7 @@ async def editar_gasto(gasto_id: int, body: GastoUpdate):
 
 
 @router.delete("/{gasto_id}")
-async def eliminar_gasto(gasto_id: int):
+def eliminar_gasto(gasto_id: int):
     conn = persistencia.get_connection()
     try:
         cur = conn.cursor()

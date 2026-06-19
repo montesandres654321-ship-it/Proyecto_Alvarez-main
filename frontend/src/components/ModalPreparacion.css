@@ -4,7 +4,23 @@
   border-radius: var(--radius-xl);
   width: 100%;
   max-width: 400px;
+  max-height: calc(100dvh - 32px);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-prep-scroll {
+  overflow-y: auto;
+  flex: 1;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 480px) {
+  .modal-prep-box {
+    max-height: calc(100dvh - 16px);
+    border-radius: var(--radius-lg);
+  }
 }
 
 .modal-prep-header {

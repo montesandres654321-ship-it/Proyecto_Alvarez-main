@@ -58,7 +58,7 @@ class LoginIn(BaseModel):
 
 @router.post("/login")
 @router.post("/login/")
-async def login(body: LoginIn):
+def login(body: LoginIn):
     pin = body.pin.strip()
     if not pin:
         return JSONResponse({"ok": False, "mensaje": "PIN requerido"})
@@ -111,7 +111,7 @@ async def login(body: LoginIn):
 # ── GET /auth/me ──────────────────────────────────────────────────────────────
 
 @router.get("/me")
-async def me(authorization: Optional[str] = Header(None)):
+def me(authorization: Optional[str] = Header(None)):
     token = None
     if authorization and authorization.startswith("Bearer "):
         token = authorization[7:]
@@ -133,7 +133,7 @@ async def me(authorization: Optional[str] = Header(None)):
 # ── POST /auth/logout ─────────────────────────────────────────────────────────
 
 @router.post("/logout")
-async def logout(authorization: Optional[str] = Header(None)):
+def logout(authorization: Optional[str] = Header(None)):
     token = None
     if authorization and authorization.startswith("Bearer "):
         token = authorization[7:]
